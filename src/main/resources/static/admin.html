@@ -233,9 +233,19 @@
                 </section>
                 <section class="view" id="view-borrows" hidden>
                     <div class="page-heading"><div><p class="eyebrow">Mượn và trả</p><h1>Yêu cầu mượn sách</h1><p class="subtitle">Duyệt yêu cầu, từ chối hoặc xác nhận trả sách.</p></div></div>
-                    <section class="panel"><div class="panel-heading"><div><h2>Tất cả giao dịch</h2><p>Danh sách yêu cầu và tình trạng mượn trả.</p></div><select class="filter" id="borrow-filter" aria-label="Lọc trạng thái"><option value="">Tất cả trạng thái</option><option value="PENDING">Chờ duyệt</option><option value="BORROWED">Đang mượn</option><option value="RETURNED">Đã trả</option><option value="REJECTED">Từ chối</option><option value="CANCELED">Đã hủy</option></select></div>
-                        <div class="unavailable" style="margin-bottom:14px"><strong>Gia hạn và phí quá hạn — Chưa khả dụng</strong><p>Giao diện trạng thái quá hạn được hiển thị theo hạn trả; nghiệp vụ gia hạn và tính phí chưa được hỗ trợ.</p></div>
+                    <section class="panel"><div class="panel-heading"><div><h2>Tất cả giao dịch</h2><p>Luồng mượn cũ; gia hạn và phí của module mới ở bảng bên dưới.</p></div><select class="filter" id="borrow-filter" aria-label="Lọc trạng thái"><option value="">Tất cả trạng thái</option><option value="PENDING">Chờ duyệt</option><option value="BORROWED">Đang mượn</option><option value="RETURNED">Đã trả</option><option value="REJECTED">Từ chối</option><option value="CANCELED">Đã hủy</option></select></div>
                         <div class="table-wrap"><table><thead><tr><th>Độc giả</th><th>Sách</th><th>Ngày yêu cầu</th><th>Hạn trả</th><th>Trạng thái</th><th>Phí quá hạn</th><th>Thao tác</th></tr></thead><tbody id="borrows-table"><tr><td colspan="7" class="loading">Đang tải yêu cầu...</td></tr></tbody></table></div>
+                    </section>
+                    <section class="panel" style="margin-top:16px">
+                        <div class="panel-heading"><div><h2>Vòng đời mượn mới</h2><p>Giao dịch từ module Loan, gia hạn và phí quá hạn.</p></div><div class="table-tools"><button class="secondary-button" id="check-overdue-button" type="button">Rà soát quá hạn</button><button class="secondary-button" id="refresh-loans-button" type="button">Tải lại</button></div></div>
+                        <div class="notice" id="loan3-notice" role="status" aria-live="polite" hidden></div>
+                        <form id="loan3-form"><div class="form-grid">
+                            <div class="field"><label for="loan3-user">Thành viên</label><select id="loan3-user" name="userId" required><option value="">Đang tải thành viên...</option></select></div>
+                            <div class="field"><label for="loan3-book">Sách</label><select id="loan3-book" name="bookId" required><option value="">Đang tải sách...</option></select></div>
+                            <div class="field"><label for="loan3-days">Số ngày mượn</label><input id="loan3-days" name="loanDays" type="number" min="1" value="14"></div>
+                            <div class="field"><button class="primary-button" id="loan3-submit" type="submit">Tạo giao dịch mượn</button></div>
+                        </div></form>
+                        <div class="table-wrap"><table><thead><tr><th>Độc giả</th><th>Sách</th><th>Ngày mượn</th><th>Hạn trả</th><th>Trạng thái</th><th>Phí</th><th>Thao tác</th></tr></thead><tbody id="loans3-table"><tr><td colspan="7" class="loading">Đang tải giao dịch...</td></tr></tbody></table></div>
                     </section>
                 </section>
                 <section class="view" id="view-users" hidden>
@@ -268,13 +278,27 @@
                     </section>
                 </section>
                 <section class="view" id="view-ebooks" hidden>
-                    <div class="page-heading"><div><p class="eyebrow">Ấn bản số</p><h1>E-Book &amp; bản quyền số</h1><p class="subtitle">Khung quản lý đầu sách điện tử và quyền đọc/tải.</p></div><span class="unavailable-badge">Chưa khả dụng</span></div>
+                    <div class="page-heading"><div><p class="eyebrow">Ấn bản số</p><h1>E-Book &amp; bản quyền số</h1><p class="subtitle">Cấp và thu hồi quyền DRM qua module thành viên.</p></div></div>
                     <div class="feature-grid">
-                        <article class="feature-card"><span class="feature-icon">e</span><h3>Kho E-Book</h3><p>Danh mục sách điện tử, định dạng tệp và liên kết nội dung.</p><span class="unavailable-badge">Chưa khả dụng</span></article>
-                        <article class="feature-card"><span class="feature-icon">©</span><h3>Quản lý bản quyền</h3><p>Thời hạn, số lượt đọc và phạm vi cấp phép cho từng ấn bản.</p><span class="unavailable-badge">Chưa khả dụng</span></article>
-                        <article class="feature-card"><span class="feature-icon">DRM</span><h3>Bảo vệ nội dung</h3><p>Kiểm soát truy cập, đọc trực tuyến và tải tệp an toàn.</p><span class="unavailable-badge">Chưa khả dụng</span></article>
+                        <article class="feature-card"><span class="feature-icon">e</span><h3>Kho E-Book</h3><p>API kiểm soát yêu cầu tải đã có; tải tệp thật chưa khả dụng vì thiếu endpoint stream.</p><span class="unavailable-badge">Tải tệp chưa khả dụng</span></article>
+                        <article class="feature-card"><span class="feature-icon">©</span><h3>Quản lý bản quyền</h3><p>Cấp thời hạn và số lượt tải cho từng thành viên.</p><span class="status borrowed">Đã kết nối API</span></article>
+                        <article class="feature-card"><span class="feature-icon">DRM</span><h3>Bảo vệ nội dung</h3><p>Thu hồi quyền truy cập khi cần thiết.</p><span class="status borrowed">Đã kết nối API</span></article>
                     </div>
-                    <section class="panel" style="margin-top:16px"><div class="panel-heading"><div><h2>Danh sách ấn bản số</h2><p>Chưa có API quản lý E-Book hoặc cấp quyền DRM.</p></div><button class="primary-button" type="button" disabled>+ Thêm E-Book</button></div><div class="unavailable"><strong>Chưa khả dụng</strong><p>Đây là giao diện minh họa cho module E-Book. Chưa thể thêm tệp, đọc trực tuyến hoặc tải sách.</p></div></section>
+                    <section class="panel" style="margin-top:16px">
+                        <div class="panel-heading"><div><h2>Cấp bản quyền DRM</h2><p>Chọn thành viên và đầu sách để tạo giấy phép.</p></div></div>
+                        <div class="notice" id="drm-notice" role="status" aria-live="polite" hidden></div>
+                        <form id="drm-form"><div class="form-grid">
+                            <div class="field"><label for="drm-user">Thành viên</label><select id="drm-user" name="userId" required><option value="">Đang tải thành viên...</option></select></div>
+                            <div class="field"><label for="drm-book">Sách</label><select id="drm-book" name="bookId" required><option value="">Đang tải sách...</option></select></div>
+                            <div class="field"><label for="drm-valid-days">Thời hạn (ngày)</label><input id="drm-valid-days" name="validDays" type="number" min="1" value="30"></div>
+                            <div class="field"><label for="drm-download-limit">Lượt tải tối đa</label><input id="drm-download-limit" name="maxDownloads" type="number" min="1" value="3"></div>
+                        </div><div class="form-actions"><button class="primary-button" id="drm-submit" type="submit">Cấp giấy phép</button></div></form>
+                    </section>
+                    <section class="panel" style="margin-top:16px">
+                        <div class="panel-heading"><div><h2>Giấy phép DRM</h2><p id="drm-count">Chọn thành viên để xem giấy phép.</p></div><button class="secondary-button" id="refresh-licenses-button" type="button">Tải lại</button></div>
+                        <div class="table-wrap"><table><thead><tr><th>Thành viên</th><th>Sách</th><th>Mã giấy phép</th><th>Hạn dùng</th><th>Lượt tải</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="licenses-table"><tr><td class="empty" colspan="7">Chọn thành viên để xem giấy phép.</td></tr></tbody></table></div>
+                        <p class="hint">API tải hiện trả URL stream nhưng chưa có endpoint phục vụ tệp; chưa thể tải E-Book thật.</p>
+                    </section>
                 </section>
                 <section class="view" id="view-notifications" hidden>
                     <div class="page-heading"><div><p class="eyebrow">Cập nhật hoạt động</p><h1>Thông báo</h1><p class="subtitle">Mẫu giao diện thông báo cho quản trị viên và thành viên.</p></div><span class="unavailable-badge">Chưa khả dụng</span></div>
@@ -345,6 +369,8 @@
             const globalNotice = document.getElementById("global-notice");
             let books = [];
             let borrows = [];
+            let loans3 = [];
+            let drmUsers = [];
             let activeView = "overview";
 
             document.getElementById("profile-name").textContent = username || "Quản trị viên";
@@ -357,6 +383,12 @@
             document.getElementById("borrow-filter").addEventListener("change", renderBorrows);
             document.getElementById("book-form").addEventListener("submit", saveBook);
             document.getElementById("user-form").addEventListener("submit", createUser);
+            document.getElementById("drm-form").addEventListener("submit", issueLicense);
+            document.getElementById("loan3-form").addEventListener("submit", createLoan3);
+            document.getElementById("drm-user").addEventListener("change", loadLicenses);
+            document.getElementById("refresh-licenses-button").addEventListener("click", loadLicenses);
+            document.getElementById("refresh-loans-button").addEventListener("click", loadLoans3);
+            document.getElementById("check-overdue-button").addEventListener("click", checkOverdue);
             document.querySelectorAll(".nav-button[data-view]").forEach(button =>
                 button.addEventListener("click", () => showView(button.dataset.view)));
             document.querySelectorAll("[data-go]").forEach(button =>
@@ -381,7 +413,15 @@
                 document.getElementById("breadcrumb-current").textContent = labels[name];
                 globalNotice.hidden = true;
                 if (name === "books") loadBooks();
-                if (name === "borrows") loadBorrows();
+                if (name === "borrows") {
+                    loadBorrows();
+                    loadLoans3();
+                    loadLoanOptions();
+                }
+                if (name === "ebooks") {
+                    populateBookOptions();
+                    loadDrmUsers();
+                }
             }
 
             function makeElement(tag, className, text) {
@@ -427,6 +467,7 @@
                     const data = await api("/api/books");
                     if (!Array.isArray(data)) throw new Error("Dữ liệu sách không đúng định dạng.");
                     books = data;
+                    populateBookOptions();
                     renderBooks();
                     renderOverview();
                 } catch (error) {
@@ -448,6 +489,249 @@
                     if (activeView === "borrows") body.innerHTML = `<tr><td colspan="7" class="error-state">${escapeHtml(error.message)}</td></tr>`;
                     document.getElementById("recent-borrows").innerHTML = `<tr><td colspan="4" class="error-state">${escapeHtml(error.message)}</td></tr>`;
                     showNotice(error.message, "error");
+                }
+            }
+
+            async function loadLoans3() {
+                const body = document.getElementById("loans3-table");
+                body.innerHTML = '<tr><td colspan="7" class="loading">Đang tải giao dịch...</td></tr>';
+                try {
+                    const data = await api("/api/v3/loans/all");
+                    if (!Array.isArray(data)) throw new Error("Dữ liệu giao dịch mới không đúng định dạng.");
+                    loans3 = data;
+                    renderLoans3();
+                } catch (error) {
+                    body.innerHTML = `<tr><td colspan="7" class="error-state">${escapeHtml(error.message)}</td></tr>`;
+                    showInlineNotice("loan3-notice", error.message, "error");
+                }
+            }
+
+            async function loadLoanOptions() {
+                const userSelect = document.getElementById("loan3-user");
+                const bookSelect = document.getElementById("loan3-book");
+                try {
+                    const data = await api("/api/admin/users");
+                    if (!Array.isArray(data)) throw new Error("Danh sách thành viên không đúng định dạng.");
+                    userSelect.replaceChildren(new Option("Chọn thành viên", ""));
+                    data.forEach(user => userSelect.add(new Option(`${user.username} (${user.email})`, user.id)));
+                    bookSelect.replaceChildren(new Option("Chọn sách", ""));
+                    books.forEach(book => bookSelect.add(new Option(book.title || `Sách #${book.id}`, book.id)));
+                    if (!books.length) bookSelect.replaceChildren(new Option("Chưa có sách", ""));
+                } catch (error) {
+                    userSelect.replaceChildren(new Option("Không tải được thành viên", ""));
+                    showInlineNotice("loan3-notice", error.message, "error");
+                }
+            }
+
+            async function createLoan3(event) {
+                event.preventDefault();
+                const form = event.currentTarget;
+                if (!form.reportValidity()) return;
+                const payload = Object.fromEntries(new FormData(form).entries());
+                payload.userId = Number(payload.userId);
+                payload.bookId = Number(payload.bookId);
+                payload.loanDays = Number(payload.loanDays);
+                const button = document.getElementById("loan3-submit");
+                button.disabled = true;
+                try {
+                    await api("/api/v3/loans/borrow", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    showInlineNotice("loan3-notice", "Đã tạo giao dịch mượn trong module mới.", "success");
+                    await loadLoans3();
+                } catch (error) {
+                    showInlineNotice("loan3-notice", error.message, "error");
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            function renderLoans3() {
+                const body = document.getElementById("loans3-table");
+                body.replaceChildren();
+                if (!loans3.length) {
+                    body.innerHTML = '<tr><td colspan="7" class="empty">Chưa có giao dịch trong module mới.</td></tr>';
+                    return;
+                }
+                loans3.forEach(loan => {
+                    const row = document.createElement("tr");
+                    row.append(makeElement("td", "", loan.user?.username || "—"),
+                        makeElement("td", "", loan.book?.title || "—"),
+                        makeElement("td", "", formatDate(loan.borrowDate)),
+                        makeElement("td", "", formatDate(loan.dueDate)));
+                    const status = document.createElement("td");
+                    status.append(makeElement("span", `status ${String(loan.status || "").toLowerCase()}`,
+                        loanStatusLabel(loan.status)));
+                    row.append(status, makeElement("td", "", formatPrice(loan.fineAmount)));
+                    const actions = makeElement("td", "actions-cell");
+                    if (["BORROWED", "EXTENDED", "OVERDUE"].includes(loan.status)) {
+                        const renew = makeElement("button", "small-button", "Gia hạn 7 ngày");
+                        renew.type = "button";
+                        renew.addEventListener("click", () => updateLoan3(loan, "renew", renew));
+                        const returnButton = makeElement("button", "small-button", "Xác nhận trả");
+                        returnButton.type = "button";
+                        returnButton.addEventListener("click", () => updateLoan3(loan, "return", returnButton));
+                        actions.append(renew, returnButton);
+                    } else {
+                        actions.textContent = "—";
+                    }
+                    row.append(actions);
+                    body.append(row);
+                });
+            }
+
+            async function updateLoan3(loan, action, button) {
+                const label = action === "renew" ? "gia hạn thêm 7 ngày" : "xác nhận đã nhận lại sách";
+                if (!window.confirm(`Bạn có chắc muốn ${label} cho "${loan.book?.title || "giao dịch này"}"?`)) return;
+                button.disabled = true;
+                try {
+                    await api(`/api/v3/loans/${encodeURIComponent(loan.id)}/${action}`, {
+                        method: "POST",
+                        ...(action === "renew" ? {
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ extraDays: 7 })
+                        } : {})
+                    });
+                    showInlineNotice("loan3-notice", action === "renew" ? "Đã gia hạn thêm 7 ngày." : "Đã xác nhận trả sách.", "success");
+                    await loadLoans3();
+                } catch (error) {
+                    button.disabled = false;
+                    showInlineNotice("loan3-notice", error.message, "error");
+                }
+            }
+
+            async function checkOverdue() {
+                const button = document.getElementById("check-overdue-button");
+                button.disabled = true;
+                try {
+                    const updated = await api("/api/v3/loans/check-overdue", { method: "POST" });
+                    showInlineNotice("loan3-notice", `Đã rà soát quá hạn; cập nhật ${Array.isArray(updated) ? updated.length : 0} giao dịch.`, "success");
+                    await loadLoans3();
+                } catch (error) {
+                    showInlineNotice("loan3-notice", error.message, "error");
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            async function loadDrmUsers() {
+                const select = document.getElementById("drm-user");
+                select.innerHTML = '<option value="">Đang tải thành viên...</option>';
+                try {
+                    const data = await api("/api/admin/users");
+                    if (!Array.isArray(data)) throw new Error("Danh sách thành viên không đúng định dạng.");
+                    drmUsers = data;
+                    select.replaceChildren(new Option("Chọn thành viên", ""));
+                    drmUsers.forEach(user => select.add(new Option(`${user.username} (${user.email})`, user.id)));
+                    if (drmUsers.length) await loadLicenses();
+                    else document.getElementById("licenses-table").innerHTML =
+                        '<tr><td class="empty" colspan="7">Chưa có thành viên trong hệ thống.</td></tr>';
+                } catch (error) {
+                    select.innerHTML = '<option value="">Không tải được thành viên</option>';
+                    showInlineNotice("drm-notice", error.message, "error");
+                    document.getElementById("licenses-table").innerHTML =
+                        `<tr><td class="error-state" colspan="7">${escapeHtml(error.message)}</td></tr>`;
+                }
+            }
+
+            function populateBookOptions() {
+                const select = document.getElementById("drm-book");
+                if (!select) return;
+                const selected = select.value;
+                select.replaceChildren(new Option("Chọn sách", ""));
+                books.forEach(book => select.add(new Option(book.title || `Sách #${book.id}`, book.id)));
+                if (books.some(book => String(book.id) === selected)) select.value = selected;
+                else if (!books.length) select.replaceChildren(new Option("Chưa có sách", ""));
+            }
+
+            async function loadLicenses() {
+                const userId = document.getElementById("drm-user").value;
+                const body = document.getElementById("licenses-table");
+                if (!userId) {
+                    document.getElementById("drm-count").textContent = "Chọn thành viên để xem giấy phép.";
+                    body.innerHTML = '<tr><td class="empty" colspan="7">Chọn thành viên để xem giấy phép.</td></tr>';
+                    return;
+                }
+                body.innerHTML = '<tr><td class="loading" colspan="7">Đang tải giấy phép...</td></tr>';
+                try {
+                    const data = await api(`/api/v3/drm/user/${encodeURIComponent(userId)}`);
+                    if (!Array.isArray(data)) throw new Error("Dữ liệu giấy phép không đúng định dạng.");
+                    document.getElementById("drm-count").textContent = `${data.length} giấy phép`;
+                    body.replaceChildren();
+                    if (!data.length) {
+                        body.innerHTML = '<tr><td class="empty" colspan="7">Thành viên này chưa có giấy phép DRM.</td></tr>';
+                        return;
+                    }
+                    data.forEach(license => {
+                        const row = document.createElement("tr");
+                        row.append(makeElement("td", "", license.user?.username || "—"),
+                            makeElement("td", "", license.book?.title || "—"),
+                            makeElement("td", "", license.licenseKey || "—"),
+                            makeElement("td", "", formatDate(license.expiryDate)),
+                            makeElement("td", "", `${Number(license.downloadCount) || 0} / ${Number(license.downloadLimit) || 0}`));
+                        const status = document.createElement("td");
+                        status.append(makeElement("span", `status ${String(license.status || "").toLowerCase()}`, license.status || "Không rõ"));
+                        row.append(status);
+                        const actions = makeElement("td", "actions-cell");
+                        if (license.status === "ACTIVE") {
+                            const revoke = makeElement("button", "small-button danger", "Thu hồi");
+                            revoke.type = "button";
+                            revoke.addEventListener("click", () => revokeLicense(license, revoke));
+                            actions.append(revoke);
+                        } else {
+                            actions.textContent = "—";
+                        }
+                        row.append(actions);
+                        body.append(row);
+                    });
+                } catch (error) {
+                    document.getElementById("drm-count").textContent = "Không tải được giấy phép";
+                    body.innerHTML = `<tr><td class="error-state" colspan="7">${escapeHtml(error.message)}</td></tr>`;
+                }
+            }
+
+            async function issueLicense(event) {
+                event.preventDefault();
+                const form = event.currentTarget;
+                if (!form.reportValidity()) return;
+                const payload = Object.fromEntries(new FormData(form).entries());
+                payload.userId = Number(payload.userId);
+                payload.bookId = Number(payload.bookId);
+                payload.validDays = Number(payload.validDays);
+                payload.maxDownloads = Number(payload.maxDownloads);
+                const button = document.getElementById("drm-submit");
+                button.disabled = true;
+                try {
+                    await api("/api/v3/drm/issue", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    showInlineNotice("drm-notice", "Đã cấp giấy phép DRM.", "success");
+                    await loadLicenses();
+                } catch (error) {
+                    showInlineNotice("drm-notice", error.message, "error");
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            async function revokeLicense(license, button) {
+                if (!window.confirm(`Thu hồi giấy phép cho "${license.book?.title || "sách này"}"?`)) return;
+                button.disabled = true;
+                try {
+                    await api("/api/v3/drm/revoke", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ licenseKey: license.licenseKey, reason: "Quản trị viên thu hồi giấy phép" })
+                    });
+                    showInlineNotice("drm-notice", "Đã thu hồi giấy phép DRM.", "success");
+                    await loadLicenses();
+                } catch (error) {
+                    button.disabled = false;
+                    showInlineNotice("drm-notice", error.message, "error");
                 }
             }
 
@@ -667,6 +951,10 @@
 
             function statusLabel(status) {
                 return ({ PENDING: "Chờ duyệt", BORROWED: "Đang mượn", RETURNED: "Đã trả", REJECTED: "Từ chối", CANCELED: "Đã hủy" })[status] || status || "Không rõ";
+            }
+
+            function loanStatusLabel(status) {
+                return ({ BORROWED: "Đang mượn", EXTENDED: "Đã gia hạn", RETURNED: "Đã trả", OVERDUE: "Quá hạn" })[status] || status || "Không rõ";
             }
 
             function formatDate(value) {
