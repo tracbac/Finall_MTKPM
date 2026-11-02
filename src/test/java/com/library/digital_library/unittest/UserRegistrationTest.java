@@ -1,81 +1,64 @@
 package com.library.digital_library.unittest;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
+import com.library.digital_library.dto.AuthRequest;
 import com.library.digital_library.model.User;
 import com.library.digital_library.repository.UserRepository;
-import com.library.digital_library.service.UserService;
+import com.library.digital_library.service.AuthService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-public class UserRegistrationTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class UserRegistrationTest {
 
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
-    private UserService userService;
+    private AuthService authService;
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
+    @Test
+    void publicRegistrationAlwaysCreatesUserRoleAndHashesPassword() {
+        AuthRequest request = new AuthRequest();
+        request.setUsername(" reader ");
+        request.setEmail("reader@example.test");
+        request.setPassword("secret");
+        request.setRole("ADMIN");
+        when(userRepository.existsByUsername("reader")).thenReturn(false);
+        when(userRepository.existsByEmail("reader@example.test")).thenReturn(false);
+        when(passwordEncoder.encode("secret")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User registered = authService.registerPublicUser(request);
+
+        assertEquals("reader", registered.getUsername());
+        assertEquals("USER", registered.getRole());
+        assertEquals("encoded", registered.getPassword());
+        verify(passwordEncoder).encode("secret");
     }
 
     @Test
-    public void testRegisterUser_Success() {
-        User user = new User();
-        user.setUsername("testuser");
-        user.setEmail("test@example.com");
-        user.setPassword("password");
+    void adminCannotAssignUnsupportedRole() {
+        AuthRequest request = new AuthRequest();
+        request.setUsername("reader");
+        request.setEmail("reader@example.test");
+        request.setPassword("secret");
+        request.setRole("SUPERUSER");
+        when(userRepository.existsByUsername("reader")).thenReturn(false);
+        when(userRepository.existsByEmail("reader@example.test")).thenReturn(false);
 
-        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.empty());
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
-        when(userRepository.save(user)).thenReturn(user);
-
-        User result = userService.registerUser(user);
-
-        assertNotNull(result);
-        assertEquals("testuser", result.getUsername());
-    }
-
-    @Test
-    public void testRegisterUser_UsernameExists() {
-        User user = new User();
-        user.setUsername("testuser");
-        user.setEmail("test@example.com");
-        user.setPassword("password");
-
-        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.of(user));
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.registerUser(user);
-        });
-
-        assertEquals("Tên đăng nhập đã tồn tại trong hệ thống!", exception.getMessage());
-    }
-
-    @Test
-    public void testRegisterUser_EmailExists() {
-        User user = new User();
-        user.setUsername("newuser");
-        user.setEmail("test@example.com");
-        user.setPassword("password");
-
-        when(userRepository.findByUsername("newuser")).thenReturn(java.util.Optional.empty());
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(true);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.registerUser(user);
-        });
-
-        assertEquals("Email này đã được sử dụng!", exception.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> authService.createUserByAdmin(request));
     }
 }
-

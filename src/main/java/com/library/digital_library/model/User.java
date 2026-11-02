@@ -1,30 +1,27 @@
 package com.library.digital_library.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
+@Data
 @Entity
 @Table(name = "users")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true, nullable = false)
     private String username;
 
-    @Column(nullable = false)
-    private String password;
-
-    @Column(nullable = false, unique = true)
+    @Column(unique = true, nullable = false) // Bổ sung trường email
     private String email;
 
     @Column(nullable = false)
-    private String role; // Ví dụ: "ADMIN", "MEMBER"
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String password;
+
+    @Column(nullable = false)
+    private String role; // Nhận 1 trong 2 giá trị: "ADMIN" hoặc "USER"
 }

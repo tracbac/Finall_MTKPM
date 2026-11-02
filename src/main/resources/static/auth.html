@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f6f1">
+    <meta name="description" content="Đăng nhập hoặc tạo tài khoản tại Thư viện Mộc.">
+    <title>Đăng nhập | Thư viện Mộc</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #1d2922;
+            --muted: #748078;
+            --green: #355d43;
+            --green-dark: #234431;
+            --cream: #f7f6f1;
+            --paper: #fffefa;
+            --line: #e6e8df;
+            --danger: #a64e43;
+            --success: #355d43;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            background: var(--cream);
+            color: var(--ink);
+            font-family: "Segoe UI", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: inherit; text-decoration: none; }
+        button, input { font: inherit; }
+        .shell { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+        .topbar { height: 78px; display: flex; align-items: center; border-bottom: 1px solid rgba(43, 61, 48, .08); }
+        .topbar-inner { display: flex; align-items: center; justify-content: space-between; }
+        .brand { display: inline-flex; align-items: center; gap: 11px; font-family: "Times New Roman", serif; font-size: 23px; font-weight: 700; }
+        .brand-mark {
+            width: 40px; height: 40px; display: grid; place-items: center;
+            border-radius: 13px 13px 13px 4px; background: var(--green); color: #fff;
+        }
+        .brand-mark svg { width: 22px; height: 22px; }
+        .home-link { color: #647168; font-size: 13px; font-weight: 650; }
+        .home-link:hover { color: var(--green); }
+        main { display: grid; place-items: center; padding: 48px 0; }
+        .auth-layout {
+            width: min(910px, 100%); min-height: 540px; display: grid;
+            grid-template-columns: .9fr 1.1fr; overflow: hidden;
+            border: 1px solid var(--line); border-radius: 20px;
+            background: var(--paper); box-shadow: 0 20px 55px rgba(34, 54, 40, .08);
+        }
+        .welcome-panel {
+            min-height: 100%; position: relative; overflow: hidden; display: flex;
+            flex-direction: column; justify-content: space-between; padding: 42px 38px;
+            background: #e8eee5;
+        }
+        .welcome-copy { position: relative; z-index: 1; }
+        .eyebrow {
+            display: inline-flex; align-items: center; gap: 8px; margin-bottom: 17px;
+            color: var(--green); font-size: 10px; font-weight: 750;
+            letter-spacing: 1.4px; text-transform: uppercase;
+        }
+        .eyebrow::before { width: 20px; height: 1px; content: ""; background: currentColor; }
+        h1, h2, p { margin-top: 0; }
+        .welcome-panel h1 {
+            max-width: 315px; margin-bottom: 13px; font-family: "Times New Roman", serif;
+            font-size: clamp(36px, 4vw, 48px); font-weight: 500; line-height: 1.04;
+        }
+        .welcome-panel h1 em { color: var(--green); font-weight: 500; }
+        .welcome-panel p { max-width: 300px; margin-bottom: 0; color: #68756c; font-size: 13px; line-height: 1.75; }
+        .art {
+            min-height: 218px; display: grid; place-items: center; position: relative;
+            margin: 15px -15px -10px;
+        }
+        .art-circle { width: 205px; height: 205px; position: absolute; border-radius: 50%; background: #d7e2d4; }
+        .art-book {
+            width: 116px; height: 165px; position: absolute; top: 50%;
+            border-radius: 4px 10px 10px 4px; box-shadow: 9px 15px 25px rgba(37, 61, 43, .2);
+        }
+        .art-book.back { left: 36%; background: #bd7955; transform: translate(-50%, -45%) rotate(-14deg); }
+        .art-book.front {
+            left: 57%; display: flex; flex-direction: column; justify-content: space-between;
+            padding: 17px 15px; background: #345b44; color: #f7f4e9;
+            transform: translate(-50%, -48%) rotate(8deg);
+        }
+        .art-book.front::before { width: 1px; position: absolute; top: 0; bottom: 0; left: 8px; content: ""; background: rgba(255,255,255,.3); }
+        .art-book small { font-size: 6px; letter-spacing: 1px; text-transform: uppercase; }
+        .art-book strong { font-family: "Times New Roman", serif; font-size: 22px; font-weight: 500; line-height: 1.05; }
+        .art-book span { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; font-family: "Times New Roman", serif; }
+        .quote { position: relative; z-index: 1; margin: 12px 0 0; color: #68756c; font-family: "Times New Roman", serif; font-size: 13px; font-style: italic; }
+        .form-panel { display: flex; align-items: center; padding: 50px 60px; }
+        .form-content { width: 100%; max-width: 370px; margin: 0 auto; }
+        .form-content h2 { margin-bottom: 8px; font-family: "Times New Roman", serif; font-size: 33px; font-weight: 500; }
+        .form-intro { margin-bottom: 25px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+        .tab-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 23px; padding: 4px; border-radius: 9px; background: #f1f2ec; }
+        .tab {
+            min-height: 37px; border: 0; border-radius: 7px; background: transparent;
+            color: #778178; cursor: pointer; font-size: 11px; font-weight: 700;
+        }
+        .tab[aria-selected="true"] { background: var(--paper); color: var(--green); box-shadow: 0 1px 5px rgba(30, 45, 33, .09); }
+        .field { margin-bottom: 15px; }
+        .field label { display: block; margin-bottom: 7px; color: #35423a; font-size: 11px; font-weight: 700; }
+        .field input {
+            width: 100%; height: 44px; padding: 0 13px; border: 1px solid #e1e4dc;
+            border-radius: 8px; outline: none; background: #fff; color: var(--ink); font-size: 12px;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .field input:focus { border-color: #74927b; box-shadow: 0 0 0 3px rgba(53, 93, 67, .1); }
+        .field input::placeholder { color: #a0a8a1; }
+        .password-wrap { position: relative; }
+        .password-wrap input { padding-right: 68px; }
+        .password-toggle {
+            position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
+            padding: 5px; border: 0; background: transparent; color: #738078;
+            cursor: pointer; font-size: 10px; font-weight: 700;
+        }
+        .message {
+            display: none; margin: 0 0 15px; padding: 11px 12px; border-radius: 8px;
+            font-size: 11px; line-height: 1.55;
+        }
+        .message.visible { display: block; }
+        .message.error { border: 1px solid #f0d7d2; background: #fff4f1; color: var(--danger); }
+        .message.success { border: 1px solid #d5e5d7; background: #f0f7ef; color: var(--success); }
+        .submit-button {
+            width: 100%; min-height: 46px; display: inline-flex; align-items: center;
+            justify-content: center; gap: 9px; margin-top: 3px; border: 0;
+            border-radius: 8px; background: var(--green); color: #fff;
+            cursor: pointer; font-size: 12px; font-weight: 750; transition: background .18s;
+        }
+        .submit-button:hover { background: var(--green-dark); }
+        .submit-button:disabled { cursor: wait; opacity: .7; }
+        .submit-button svg { width: 15px; height: 15px; }
+        .form-footnote { margin: 16px 0 0; color: #929b93; font-size: 10px; line-height: 1.6; text-align: center; }
+        .role-note { display: none; margin-top: 13px; color: #6e7c70; font-size: 10px; line-height: 1.55; text-align: center; }
+        .role-note.visible { display: block; }
+        footer { padding: 19px 0 24px; color: #808981; font-size: 10px; }
+        .footer-inner { display: flex; justify-content: space-between; gap: 16px; }
+        .hidden { display: none !important; }
+        @media (max-width: 760px) {
+            .shell { width: min(100% - 32px, 540px); }
+            .topbar { height: 68px; }
+            .brand { font-size: 20px; }
+            .brand-mark { width: 36px; height: 36px; }
+            main { padding: 26px 0; }
+            .auth-layout { grid-template-columns: 1fr; }
+            .welcome-panel { min-height: 205px; padding: 25px 26px; }
+            .welcome-panel h1 { max-width: 280px; margin-bottom: 8px; font-size: 34px; }
+            .welcome-panel p { max-width: 420px; font-size: 11px; }
+            .welcome-panel .eyebrow { margin-bottom: 11px; }
+            .art, .quote { display: none; }
+            .form-panel { padding: 31px 25px 35px; }
+            .form-content h2 { font-size: 30px; }
+        }
+        @media (max-width: 420px) {
+            .shell { width: calc(100% - 24px); }
+            .home-link { font-size: 11px; }
+            .welcome-panel { padding: 22px; }
+            .form-panel { padding-right: 20px; padding-left: 20px; }
+            .footer-inner { flex-direction: column; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="shell topbar-inner">
+            <a class="brand" href="/" aria-label="Thư viện Mộc - Trang chủ">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 5.5v12M8 7h8M8 10h7"/></svg>
+                </span>
+                <span>thư viện mộc</span>
+            </a>
+            <a class="home-link" href="/">← Quay lại thư viện</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="shell auth-layout" aria-label="Tài khoản thư viện">
+            <aside class="welcome-panel">
+                <div class="welcome-copy">
+                    <span class="eyebrow">Chào mừng bạn</span>
+                    <h1>Mỗi trang sách,<br><em>một hành trình.</em></h1>
+                    <p>Đăng nhập để tiếp tục hành trình đọc, hoặc tạo tài khoản để khám phá thư viện.</p>
+                </div>
+                <div class="art" aria-hidden="true">
+                    <div class="art-circle"></div>
+                    <div class="art-book back"></div>
+                    <div class="art-book front">
+                        <small>Thư viện Mộc</small>
+                        <strong>Những<br>ngày<br>xanh</strong>
+                        <span>M</span>
+                    </div>
+                </div>
+                <p class="quote">“Một cuốn sách mở ra, một thế giới bắt đầu.”</p>
+            </aside>
+
+            <section class="form-panel">
+                <div class="form-content">
+                    <span class="eyebrow">Góc đọc của bạn</span>
+                    <h2 id="form-title">Chào mừng trở lại</h2>
+                    <p class="form-intro" id="form-intro">Đăng nhập để xem những cuốn sách đang chờ bạn.</p>
+
+                    <div class="tab-list" role="tablist" aria-label="Chọn đăng nhập hoặc đăng ký">
+                        <button class="tab" type="button" id="login-tab" role="tab" aria-selected="true" aria-controls="auth-form">Đăng nhập</button>
+                        <button class="tab" type="button" id="register-tab" role="tab" aria-selected="false" aria-controls="auth-form">Tạo tài khoản</button>
+                    </div>
+
+                    <div class="message" id="form-message" role="status" aria-live="polite"></div>
+                    <form id="auth-form" novalidate>
+                        <div class="field hidden" id="email-field">
+                            <label for="email">Email</label>
+                            <input id="email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="ban@email.com">
+                        </div>
+                        <div class="field">
+                            <label for="username">Tên đăng nhập</label>
+                            <input id="username" name="username" type="text" autocomplete="username" maxlength="50" required placeholder="Nhập tên đăng nhập">
+                        </div>
+                        <div class="field">
+                            <label for="password">Mật khẩu</label>
+                            <div class="password-wrap">
+                                <input id="password" name="password" type="password" autocomplete="current-password" maxlength="100" required placeholder="Nhập mật khẩu">
+                                <button class="password-toggle" type="button" id="password-toggle" aria-label="Hiện mật khẩu">Hiện</button>
+                            </div>
+                        </div>
+                        <button class="submit-button" type="submit" id="submit-button">
+                            <span id="submit-label">Đăng nhập</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </button>
+                    </form>
+                    <p class="role-note" id="role-note"></p>
+                    <p class="form-footnote">Đăng ký công khai tạo tài khoản thành viên. Quyền quản trị được cấp riêng.</p>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <footer>
+        <div class="shell footer-inner">
+            <span>© <span id="current-year"></span> Thư viện Mộc</span>
+            <span>Đọc một chút, hiểu thêm nhiều.</span>
+        </div>
+    </footer>
+
+    <script>
+        (() => {
+            const form = document.getElementById("auth-form");
+            const emailField = document.getElementById("email-field");
+            const emailInput = document.getElementById("email");
+            const usernameInput = document.getElementById("username");
+            const passwordInput = document.getElementById("password");
+            const message = document.getElementById("form-message");
+            const submitButton = document.getElementById("submit-button");
+            const loginTab = document.getElementById("login-tab");
+            const registerTab = document.getElementById("register-tab");
+            const roleNote = document.getElementById("role-note");
+            const query = new URLSearchParams(window.location.search);
+            let mode = query.get("mode") === "register" ? "register" : "login";
+
+            document.getElementById("current-year").textContent = new Date().getFullYear();
+            setMode(mode);
+
+            loginTab.addEventListener("click", () => setMode("login"));
+            registerTab.addEventListener("click", () => setMode("register"));
+            document.getElementById("password-toggle").addEventListener("click", event => {
+                const reveal = passwordInput.type === "password";
+                passwordInput.type = reveal ? "text" : "password";
+                event.currentTarget.textContent = reveal ? "Ẩn" : "Hiện";
+                event.currentTarget.setAttribute("aria-label", reveal ? "Ẩn mật khẩu" : "Hiện mật khẩu");
+            });
+
+            function setMode(nextMode) {
+                mode = nextMode;
+                const isRegister = mode === "register";
+                emailField.classList.toggle("hidden", !isRegister);
+                emailInput.required = isRegister;
+                passwordInput.autocomplete = isRegister ? "new-password" : "current-password";
+                loginTab.setAttribute("aria-selected", String(!isRegister));
+                registerTab.setAttribute("aria-selected", String(isRegister));
+                document.getElementById("form-title").textContent = isRegister ? "Tạo tài khoản" : "Chào mừng trở lại";
+                document.getElementById("form-intro").textContent = isRegister
+                    ? "Tạo tài khoản thành viên để bắt đầu khám phá thư viện."
+                    : "Đăng nhập để tiếp tục hành trình đọc của bạn.";
+                document.getElementById("submit-label").textContent = isRegister ? "Đăng ký" : "Đăng nhập";
+                document.getElementById("password-toggle").textContent = "Hiện";
+                passwordInput.type = "password";
+                clearMessage();
+            }
+
+            function showMessage(text, kind) {
+                message.textContent = text;
+                message.className = `message visible ${kind}`;
+            }
+
+            function clearMessage() {
+                message.textContent = "";
+                message.className = "message";
+                roleNote.textContent = "";
+                roleNote.classList.remove("visible");
+            }
+
+            async function readError(response) {
+                const text = await response.text();
+                if (response.status === 401) return "Tên đăng nhập hoặc mật khẩu chưa chính xác.";
+                if (response.status === 409) {
+                    try {
+                        const payload = JSON.parse(text);
+                        if (/username/i.test(payload.message || "")) return "Tên đăng nhập này đã được sử dụng.";
+                        if (/email/i.test(payload.message || "")) return "Email này đã được sử dụng.";
+                    } catch (_) {
+                        return "Tên đăng nhập hoặc email đã được sử dụng.";
+                    }
+                    return "Tên đăng nhập hoặc email đã được sử dụng.";
+                }
+                if (response.status === 400) {
+                    try {
+                        const payload = JSON.parse(text);
+                        return payload.message || "Thông tin nhập chưa hợp lệ. Vui lòng kiểm tra lại.";
+                    } catch (_) {
+                        return "Thông tin nhập chưa hợp lệ. Vui lòng kiểm tra lại.";
+                    }
+                }
+                return "Máy chủ chưa xử lý được yêu cầu. Vui lòng thử lại sau.";
+            }
+
+            form.addEventListener("submit", async event => {
+                event.preventDefault();
+                clearMessage();
+
+                if (!form.reportValidity()) return;
+                if (mode === "register" && !emailInput.validity.valid) {
+                    emailInput.reportValidity();
+                    return;
+                }
+
+                submitButton.disabled = true;
+                document.getElementById("submit-label").textContent = mode === "register"
+                    ? "Đang tạo tài khoản..." : "Đang đăng nhập...";
+
+                try {
+                    const isRegister = mode === "register";
+                    const payload = {
+                        username: usernameInput.value.trim(),
+                        password: passwordInput.value
+                    };
+                    if (isRegister) payload.email = emailInput.value.trim();
+
+                    const response = await fetch(isRegister ? "/api/auth/register" : "/api/auth/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        showMessage(await readError(response), "error");
+                        return;
+                    }
+
+                    const result = await response.json();
+                    if (isRegister) {
+                        usernameInput.value = result.username || payload.username;
+                        passwordInput.value = "";
+                        emailInput.value = "";
+                        setMode("login");
+                        showMessage("Đăng ký thành công. Hãy đăng nhập bằng tài khoản vừa tạo.", "success");
+                        return;
+                    }
+
+                    if (!result.token || !result.username || !result.role) {
+                        throw new Error("Authentication response is missing required fields");
+                    }
+
+                    sessionStorage.setItem("library.token", result.token);
+                    sessionStorage.setItem("library.username", result.username);
+                    sessionStorage.setItem("library.role", result.role);
+
+                    if (result.role.toUpperCase() === "ADMIN") {
+                        window.location.replace("/admin.html");
+                        return;
+                    }
+
+                    window.location.replace("/");
+                } catch (error) {
+                    console.error("Không thể hoàn tất yêu cầu xác thực:", error);
+                    showMessage("Không thể kết nối máy chủ. Hãy kiểm tra ứng dụng rồi thử lại.", "error");
+                } finally {
+                    submitButton.disabled = false;
+                    document.getElementById("submit-label").textContent = mode === "register"
+                        ? "Đăng ký" : "Đăng nhập";
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

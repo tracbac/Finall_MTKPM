@@ -26,4 +26,7 @@ public class Book {
 
     @Column(nullable = false)
     private Integer quantity; // Số lượng sách trong kho
+
+    @Column(name = "image_url")
+    private String imageUrl;
 }

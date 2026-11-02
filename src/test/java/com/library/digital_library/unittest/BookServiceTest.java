@@ -1,7 +1,10 @@
 package com.library.digital_library.unittest;
 
 import com.library.digital_library.model.Book;
+import com.library.digital_library.model.BookPrice;
 import com.library.digital_library.repository.BookRepository;
+import com.library.digital_library.service.BookCoverStorage;
+import com.library.digital_library.service.BookPriceService;
 import com.library.digital_library.service.BookService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,8 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,6 +27,12 @@ class BookServiceTest {
 
     @Mock
     private BookRepository bookRepository;
+
+    @Mock
+    private BookPriceService bookPriceService;
+
+    @Mock
+    private BookCoverStorage bookCoverStorage;
 
     @InjectMocks
     private BookService bookService;
@@ -41,26 +50,19 @@ class BookServiceTest {
     }
 
     @Test
-    @DisplayName("Test lấy danh sách tất cả sách thành công")
-    void testGetAllBooks() {
-        when(bookRepository.findAll()).thenReturn(Arrays.asList(sampleBook));
+    void filtersBooksAndIncludesPersistedPrices() {
+        BookPrice price = new BookPrice();
+        price.setBook(sampleBook);
+        price.setRentalPrice(new java.math.BigDecimal("3.00"));
+        price.setCoverPrice(new java.math.BigDecimal("25.00"));
+        when(bookRepository.search("Spring", "IT")).thenReturn(List.of(sampleBook));
+        when(bookPriceService.findByBookIds(List.of(1L))).thenReturn(Map.of(1L, price));
 
-        List<Book> books = bookService.getAllBooks();
+        var result = bookService.getBooks(" Spring ", " IT ");
 
-        assertEquals(1, books.size());
-        assertEquals("Lập trình Spring Boot", books.get(0).getTitle());
-        verify(bookRepository, times(1)).findAll();
-    }
-
-    @Test
-    @DisplayName("Test thêm mới sách thành công")
-    void testSaveBook() {
-        when(bookRepository.save(any(Book.class))).thenReturn(sampleBook);
-
-        Book savedBook = bookService.saveBook(sampleBook);
-
-        assertNotNull(savedBook);
-        assertEquals("Lập trình Spring Boot", savedBook.getTitle());
-        verify(bookRepository, times(1)).save(sampleBook);
+        assertEquals(1, result.size());
+        assertEquals(new java.math.BigDecimal("3.00"), result.get(0).rentalPrice());
+        assertEquals(new java.math.BigDecimal("25.00"), result.get(0).coverPrice());
+        verify(bookRepository).search("Spring", "IT");
     }
 }

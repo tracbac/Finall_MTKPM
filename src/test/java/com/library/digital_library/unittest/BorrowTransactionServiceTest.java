@@ -1,5 +1,6 @@
 package com.library.digital_library.unittest;
 
+import com.library.digital_library.dto.BorrowRequest;
 import com.library.digital_library.model.Book;
 import com.library.digital_library.model.BorrowTransaction;
 import com.library.digital_library.model.User;
@@ -7,23 +8,23 @@ import com.library.digital_library.repository.BookRepository;
 import com.library.digital_library.repository.BorrowTransactionRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.service.BorrowTransactionService;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
-import java.time.LocalDate;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Kiểm thử logic Mượn sách (Borrow Transaction Service Test)")
 class BorrowTransactionServiceTest {
 
     @Mock
@@ -38,34 +39,114 @@ class BorrowTransactionServiceTest {
     @InjectMocks
     private BorrowTransactionService transactionService;
 
-    private User sampleUser;
-    private Book sampleBook;
+    private User user;
+    private Book book;
 
     @BeforeEach
     void setUp() {
-        sampleUser = new User();
-        sampleUser.setId(1L);
-        sampleUser.setUsername("bacnguyen");
+        user = new User();
+        user.setId(1L);
+        user.setUsername("reader");
 
-        sampleBook = new Book();
-        sampleBook.setId(1L);
-        sampleBook.setTitle("Clean Code");
-        sampleBook.setQuantity(5);
+        book = new Book();
+        book.setId(10L);
+        book.setTitle("Clean Code");
+        book.setQuantity(5);
     }
 
     @Test
-    @DisplayName("Test mượn sách thành công")
-    void testBorrowBookSuccess() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
-        when(bookRepository.findById(1L)).thenReturn(Optional.of(sampleBook));
-        when(transactionRepository.save(any(BorrowTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    void createsPendingRequestAndReservesOneCopy() {
+        BorrowRequest request = request(10L, 14);
+        when(userRepository.findByUsername("reader")).thenReturn(Optional.of(user));
+        when(bookRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(book));
+        when(transactionRepository.save(any(BorrowTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        BorrowTransaction transaction = transactionService.borrowBook(1L, 1L);
+        BorrowTransaction transaction = transactionService.createBorrowRequest("reader", request);
 
-        assertNotNull(transaction);
-        assertEquals("BORROWED", transaction.getStatus());
-        assertEquals(4, sampleBook.getQuantity()); // Kiểm tra kho giảm đi 1
-        verify(bookRepository, times(1)).save(sampleBook);
-        verify(transactionRepository, times(1)).save(any(BorrowTransaction.class));
+        assertEquals("PENDING", transaction.getStatus());
+        assertEquals(4, book.getQuantity());
+        assertEquals(transaction.getBorrowDate().plusDays(14), transaction.getDueDate());
+    }
+
+    @Test
+    void rejectsBorrowWhenInventoryIsEmpty() {
+        book.setQuantity(0);
+        when(userRepository.findByUsername("reader")).thenReturn(Optional.of(user));
+        when(bookRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(book));
+
+        assertThrows(IllegalStateException.class,
+                () -> transactionService.createBorrowRequest("reader", request(10L, 14)));
+        verify(transactionRepository, never()).save(any(BorrowTransaction.class));
+    }
+
+    @Test
+    void approvalAndReturnFollowValidStateTransitions() {
+        book.setQuantity(4);
+        BorrowTransaction transaction = transaction("PENDING");
+        when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
+        when(transactionRepository.save(any(BorrowTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(bookRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(book));
+
+        assertEquals("BORROWED", transactionService.approveTransaction(20L).getStatus());
+        assertEquals("RETURNED", transactionService.returnBook(20L).getStatus());
+        assertEquals(5, book.getQuantity());
+    }
+
+    @Test
+    void onlyOwnerCanCancelPendingRequestAndInventoryIsReleased() {
+        BorrowTransaction transaction = transaction("PENDING");
+        when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
+        when(bookRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(book));
+        when(transactionRepository.save(any(BorrowTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        book.setQuantity(4);
+
+        BorrowTransaction canceled = transactionService.cancelBorrowRequest("reader", 20L);
+
+        assertEquals("CANCELED", canceled.getStatus());
+        assertEquals(5, book.getQuantity());
+    }
+
+    @Test
+    void rejectsPendingRequestAndReleasesReservedCopy() {
+        book.setQuantity(4);
+        BorrowTransaction transaction = transaction("PENDING");
+        when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
+        when(bookRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(book));
+        when(transactionRepository.save(any(BorrowTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        BorrowTransaction rejected = transactionService.rejectBorrowRequest(20L);
+
+        assertEquals("REJECTED", rejected.getStatus());
+        assertEquals(5, book.getQuantity());
+    }
+
+    @Test
+    void preventsAnotherUserFromCancelingBorrowRequest() {
+        BorrowTransaction transaction = transaction("PENDING");
+        when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
+
+        assertThrows(AccessDeniedException.class,
+                () -> transactionService.cancelBorrowRequest("someone-else", 20L));
+        verify(bookRepository, never()).findByIdForUpdate(10L);
+    }
+
+    private BorrowRequest request(Long bookId, int days) {
+        BorrowRequest request = new BorrowRequest();
+        request.setBookId(bookId);
+        request.setBorrowDays(days);
+        return request;
+    }
+
+    private BorrowTransaction transaction(String status) {
+        BorrowTransaction transaction = new BorrowTransaction();
+        transaction.setId(20L);
+        transaction.setUser(user);
+        transaction.setBook(book);
+        transaction.setStatus(status);
+        return transaction;
     }
 }
