@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f6f1">
+    <title>Sách của tôi | Thư viện Mộc</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #1d2922;
+            --muted: #748078;
+            --green: #355d43;
+            --green-dark: #234431;
+            --cream: #f7f6f1;
+            --paper: #fffefa;
+            --line: #e6e8df;
+            --danger: #a64e43;
+            --amber: #926b2e;
+        }
+        * { box-sizing: border-box; }
+        body { min-height: 100vh; margin: 0; display: grid; grid-template-rows: auto 1fr auto; background: var(--cream); color: var(--ink); font-family: "Segoe UI", Arial, sans-serif; }
+        button, a { -webkit-tap-highlight-color: transparent; }
+        button { font: inherit; }
+        a { color: inherit; text-decoration: none; }
+        .shell { width: min(1050px, calc(100% - 44px)); margin: 0 auto; }
+        .topbar { min-height: 74px; display: flex; align-items: center; border-bottom: 1px solid rgba(43, 61, 48, .08); background: rgba(255, 254, 250, .88); }
+        .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .brand { display: inline-flex; align-items: center; gap: 10px; font-family: "Times New Roman", serif; font-size: 21px; font-weight: 700; }
+        .brand-mark { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 12px 12px 12px 4px; background: var(--green); color: #fff; }
+        .brand-mark svg { width: 20px; height: 20px; }
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .header-link { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; color: #526057; font-size: 11px; font-weight: 650; }
+        .header-link:hover { border-color: #9baa9d; background: #fff; color: var(--green); }
+        main { width: 100%; padding: 54px 0 70px; }
+        .heading { margin-bottom: 25px; }
+        .eyebrow { margin-bottom: 9px; color: var(--green); font-size: 10px; font-weight: 750; letter-spacing: 1.5px; text-transform: uppercase; }
+        h1, h2, p { margin-top: 0; }
+        h1 { margin-bottom: 9px; font-family: "Times New Roman", serif; font-size: clamp(32px, 5vw, 43px); font-weight: 500; }
+        .intro { margin-bottom: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+        .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
+        .summary-card { padding: 16px 18px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); }
+        .summary-card span { display: block; color: var(--muted); font-size: 10px; }
+        .summary-card strong { display: block; margin-top: 7px; font-family: "Times New Roman", serif; font-size: 25px; font-weight: 500; }
+        .panel { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+        .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+        .panel-head h2 { margin: 0; font-family: "Times New Roman", serif; font-size: 20px; font-weight: 500; }
+        .panel-head p { margin: 5px 0 0; color: var(--muted); font-size: 10px; }
+        .filter { min-height: 35px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font-size: 10px; }
+        .table-wrap { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+        th { padding: 12px 17px; border-bottom: 1px solid var(--line); color: #89938b; font-size: 9px; font-weight: 700; }
+        td { padding: 14px 17px; border-bottom: 1px solid #f0f1ec; color: #58645b; font-size: 10px; }
+        tbody tr:last-child td { border-bottom: 0; }
+        .book-name { color: var(--ink); font-weight: 700; }
+        .status { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 999px; background: #f0f1ed; color: #707b72; font-size: 9px; font-weight: 700; }
+        .status.pending { background: #fbf1df; color: var(--amber); }
+        .status.borrowed { background: #e9f0e9; color: var(--green); }
+        .status.returned, .status.rejected, .status.canceled { background: #f0f1ed; color: #7d867e; }
+        .cancel-button, .retry-button { min-height: 30px; padding: 0 10px; border: 1px solid #f0d7d2; border-radius: 7px; background: #fff7f5; color: var(--danger); cursor: pointer; font-size: 9px; font-weight: 700; }
+        .cancel-button:disabled { cursor: wait; opacity: .6; }
+        .module-action { min-height: 31px; padding: 0 10px; border: 1px solid #cbd9cc; border-radius: 7px; background: #edf4ed; color: var(--green); cursor: pointer; font-size: 9px; font-weight: 700; }
+        .module-action:disabled { cursor: wait; opacity: .6; }
+        .module-action[disabled] { cursor: not-allowed; }
+        .empty, .loading, .error-state { padding: 42px 18px; color: var(--muted); text-align: center; font-size: 11px; line-height: 1.6; }
+        .error-state { color: var(--danger); }
+        .empty strong { display: block; margin-bottom: 6px; color: var(--ink); font-family: "Times New Roman", serif; font-size: 19px; font-weight: 500; }
+        .empty p { margin: 0; }
+        .catalog-link { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; margin-top: 14px; padding: 0 13px; border-radius: 999px; background: var(--green); color: white; font-size: 10px; font-weight: 700; }
+        .catalog-link:hover { background: var(--green-dark); }
+        .notice { margin-bottom: 14px; padding: 11px 13px; border: 1px solid #d5e5d7; border-radius: 8px; background: #f0f7ef; color: var(--green); font-size: 10px; line-height: 1.5; }
+        .notice.error { border-color: #f0d7d2; background: #fff4f1; color: var(--danger); }
+        .notice[hidden] { display: none; }
+        .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+        .feature-card { min-height: 160px; display: flex; flex-direction: column; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); }
+        .feature-card h2 { margin: 0 0 7px; font-family: "Times New Roman", serif; font-size: 18px; font-weight: 500; }
+        .feature-card p { margin: 0 0 12px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+        .feature-card .unavailable-badge { margin-top: auto; }
+        .unavailable-badge { display: inline-flex; align-items: center; align-self: flex-start; min-height: 22px; padding: 0 8px; border-radius: 999px; background: #f3efe5; color: var(--amber); font-size: 9px; font-weight: 700; }
+        .placeholder-action { min-height: 31px; align-self: flex-start; margin: auto 0 10px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: #f1f2ee; color: #858e87; cursor: not-allowed; font-size: 9px; font-weight: 700; }
+        .fine-placeholder { color: var(--amber); font-size: 9px; font-weight: 700; }
+        footer { padding: 20px 0 25px; border-top: 1px solid var(--line); color: #808981; font-size: 10px; }
+        .footer-inner { display: flex; justify-content: space-between; gap: 12px; }
+        @media (max-width: 650px) {
+            .shell { width: min(100% - 30px, 520px); }
+            .topbar { min-height: 64px; }
+            .brand { font-size: 18px; }
+            .brand-mark { width: 33px; height: 33px; }
+            .header-link { min-height: 34px; padding: 0 10px; font-size: 9px; }
+            main { padding: 35px 0 48px; }
+            .summary { gap: 8px; }
+            .summary-card { padding: 12px 10px; }
+            .summary-card span { min-height: 25px; font-size: 9px; }
+            .summary-card strong { font-size: 22px; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .panel-head { align-items: flex-start; flex-direction: column; padding: 15px; }
+            th, td { padding-right: 12px; padding-left: 12px; }
+            .footer-inner { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="shell topbar-inner">
+            <a class="brand" href="/" aria-label="Thư viện Mộc - Trang chủ">
+                <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 5.5v12M8 7h8M8 10h7"/></svg></span>
+                <span>thư viện mộc</span>
+            </a>
+            <nav class="header-actions" aria-label="Điều hướng">
+                <a class="header-link" href="/">Trang chủ</a>
+                <a class="header-link" href="/#books">Tìm sách</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <div class="shell">
+            <section class="heading">
+                <p class="eyebrow">Góc đọc của bạn</p>
+                <h1>Sách của tôi</h1>
+                <p class="intro">Theo dõi yêu cầu mượn, thời hạn trả và lịch sử đọc sách của bạn.</p>
+            </section>
+            <div class="summary" aria-label="Tóm tắt sách mượn">
+                <article class="summary-card"><span>Chờ duyệt</span><strong id="pending-count">—</strong></article>
+                <article class="summary-card"><span>Đang mượn</span><strong id="active-count">—</strong></article>
+                <article class="summary-card"><span>Đã hoàn tất</span><strong id="completed-count">—</strong></article>
+            </div>
+            <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+            <section class="panel" aria-labelledby="history-title">
+                <div class="panel-head">
+                    <div><h2 id="history-title">Lịch sử mượn</h2><p id="history-count">Đang tải giao dịch...</p></div>
+                    <select class="filter" id="status-filter" aria-label="Lọc giao dịch theo trạng thái">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="PENDING">Chờ duyệt</option>
+                        <option value="BORROWED">Đang mượn</option>
+                        <option value="RETURNED">Đã trả</option>
+                        <option value="REJECTED">Từ chối</option>
+                        <option value="CANCELED">Đã hủy</option>
+                    </select>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Tên sách</th><th>Ngày yêu cầu</th><th>Hạn trả</th><th>Ngày trả</th><th>Trạng thái</th><th>Phí quá hạn</th><th>Thao tác</th></tr></thead>
+                        <tbody id="history-table"><tr><td class="loading" colspan="7">Đang tải lịch sử...</td></tr></tbody>
+                    </table>
+                </div>
+                <p class="hint">Các giao dịch trong bảng này thuộc luồng cũ; gia hạn và phí áp dụng cho giao dịch trong module mới bên dưới.</p>
+            </section>
+            <section class="panel" style="margin-top:16px">
+                <div class="panel-head"><div><h2>Giao dịch mượn mới</h2><p>Gia hạn và theo dõi sách từ module Loan.</p></div><button class="module-action" id="refresh-loans3" type="button">Tải lại</button></div>
+                <div class="notice" id="module3-notice" role="status" aria-live="polite" hidden></div>
+                <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Ngày mượn</th><th>Hạn trả</th><th>Trạng thái</th><th>Phí</th><th>Thao tác</th></tr></thead><tbody id="loans3-table"><tr><td class="loading" colspan="6">Đang tải giao dịch...</td></tr></tbody></table></div>
+            </section>
+            <section class="panel" style="margin-top:16px">
+                <div class="panel-head"><div><h2>Phí quá hạn</h2><p>Tra cứu biên lai và ghi nhận khoản phạt đã thanh toán.</p></div></div>
+                <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Ngày quá hạn</th><th>Phí</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="fines3-table"><tr><td class="loading" colspan="5">Đang tải biên lai...</td></tr></tbody></table></div>
+                <p class="hint">Ghi nhận tại đây không thu tiền qua cổng thanh toán; chỉ lưu phương thức đã thanh toán.</p>
+            </section>
+            <section class="panel" style="margin-top:16px">
+                <div class="panel-head"><div><h2>E-Book &amp; bản quyền số</h2><p>Các giấy phép DRM được cấp cho tài khoản của bạn.</p></div><button class="module-action" id="refresh-licenses3" type="button">Tải lại</button></div>
+                <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Mã giấy phép</th><th>Hạn dùng</th><th>Lượt tải</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="licenses3-table"><tr><td class="loading" colspan="6">Đang tải giấy phép...</td></tr></tbody></table></div>
+                <p class="hint">API cấp phép DRM đã có. Tải tệp thật chưa khả dụng vì backend chưa có endpoint stream.</p>
+            </section>
+            <section class="panel" style="margin-top:16px">
+                <div class="panel-head"><div><h2>Nhật ký truy cập E-Book</h2><p>Lịch sử các yêu cầu tải được DRM ghi nhận.</p></div></div>
+                <div class="table-wrap"><table><thead><tr><th>Thời điểm</th><th>Mã giấy phép</th><th>Kết quả</th><th>Chi tiết</th></tr></thead><tbody id="download-logs3-table"><tr><td class="loading" colspan="4">Đang tải nhật ký...</td></tr></tbody></table></div>
+            </section>
+            <section class="feature-grid" aria-label="Các chức năng thành viên chưa khả dụng">
+                <article class="feature-card">
+                    <h2>Thông báo của tôi</h2>
+                    <p>Cập nhật duyệt mượn, nhắc hạn trả và thông tin thư viện.</p>
+                    <button class="placeholder-action" type="button" disabled>Xem thông báo</button>
+                    <span class="unavailable-badge">Chưa khả dụng</span>
+                </article>
+            </section>
+        </div>
+    </main>
+    <footer><div class="shell footer-inner"><span>© <span id="current-year"></span> Thư viện Mộc</span><span>Đọc một chút, hiểu thêm nhiều.</span></div></footer>
+    <script>
+        (() => {
+            const token = sessionStorage.getItem("library.token");
+            const role = sessionStorage.getItem("library.role");
+            const transactionsTable = document.getElementById("history-table");
+            const statusFilter = document.getElementById("status-filter");
+            const numberFormat = new Intl.NumberFormat("vi-VN");
+            const username = sessionStorage.getItem("library.username");
+            let transactions = [];
+            let userId = null;
+            let loans3 = [];
+
+            if (!token || role?.toUpperCase() !== "USER") {
+                window.location.replace(token && role?.toUpperCase() === "ADMIN" ? "/admin.html" : "/auth.html");
+                return;
+            }
+
+            document.getElementById("current-year").textContent = new Date().getFullYear();
+            statusFilter.addEventListener("change", renderTransactions);
+            document.getElementById("refresh-loans3").addEventListener("click", loadModule3);
+            document.getElementById("refresh-licenses3").addEventListener("click", loadLicenses3);
+            loadHistory();
+
+            function makeElement(tag, className, text) {
+                const element = document.createElement(tag);
+                if (className) element.className = className;
+                if (text !== undefined) element.textContent = text;
+                return element;
+            }
+
+            async function loadHistory() {
+                transactionsTable.innerHTML = '<tr><td class="loading" colspan="7">Đang tải lịch sử...</td></tr>';
+                try {
+                    const response = await fetch("/api/borrows/my-history", {
+                        headers: { "Authorization": "Bearer " + token, "Accept": "application/json" }
+                    });
+                    if (response.status === 401) {
+                        clearSession();
+                        window.location.replace("/auth.html");
+                        return;
+                    }
+                    if (!response.ok) throw new Error(await errorMessage(response));
+                    const data = await response.json();
+                    if (!Array.isArray(data)) throw new Error("Dữ liệu lịch sử mượn không đúng định dạng.");
+                    transactions = data;
+                    userId = data.find(item => item.userId && (!username || item.username === username))?.userId || null;
+                    renderSummary();
+                    renderTransactions();
+                    await loadModule3();
+                } catch (error) {
+                    console.error("Không thể tải lịch sử mượn:", error);
+                    transactionsTable.innerHTML = `<tr><td class="error-state" colspan="7">${escapeHtml(error.message || "Không thể kết nối máy chủ.")}</td></tr>`;
+                    document.getElementById("history-count").textContent = "Không tải được lịch sử";
+                }
+            }
+
+            async function api(url, options = {}) {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: { ...(options.headers || {}), "Authorization": "Bearer " + token, "Accept": "application/json" }
+                });
+                if (response.status === 401) {
+                    clearSession();
+                    window.location.replace("/auth.html");
+                    throw new Error("Phiên đăng nhập đã hết hạn.");
+                }
+                if (!response.ok) throw new Error(await errorMessage(response));
+                if (response.status === 204) return null;
+                return response.json();
+            }
+
+            async function loadModule3() {
+                const loanBody = document.getElementById("loans3-table");
+                const fineBody = document.getElementById("fines3-table");
+                const licenseBody = document.getElementById("licenses3-table");
+                const logsBody = document.getElementById("download-logs3-table");
+                if (!userId) {
+                    const message = "Chưa thể tải nghiệp vụ mới: API đăng nhập chưa trả mã thành viên và tài khoản chưa có lịch sử mượn để nhận diện mã này.";
+                    loanBody.innerHTML = `<tr><td class="empty" colspan="6">${escapeHtml(message)}</td></tr>`;
+                    fineBody.innerHTML = '<tr><td class="empty" colspan="5">Chưa có mã thành viên để tra cứu biên lai.</td></tr>';
+                    licenseBody.innerHTML = '<tr><td class="empty" colspan="6">Chưa có mã thành viên để tra cứu giấy phép DRM.</td></tr>';
+                    logsBody.innerHTML = '<tr><td class="empty" colspan="4">Chưa có mã thành viên để tra cứu nhật ký.</td></tr>';
+                    showModule3Notice(message, "error");
+                    return;
+                }
+                showModule3Notice("", "");
+                loanBody.innerHTML = '<tr><td class="loading" colspan="6">Đang tải giao dịch...</td></tr>';
+                fineBody.innerHTML = '<tr><td class="loading" colspan="5">Đang tải biên lai...</td></tr>';
+                licenseBody.innerHTML = '<tr><td class="loading" colspan="6">Đang tải giấy phép...</td></tr>';
+                logsBody.innerHTML = '<tr><td class="loading" colspan="4">Đang tải nhật ký...</td></tr>';
+                const results = await Promise.allSettled([
+                    loadLoans3(),
+                    loadFines3(),
+                    loadLicenses3(),
+                    loadDownloadLogs3()
+                ]);
+                const failure = results.find(result => result.status === "rejected");
+                if (failure) showModule3Notice(failure.reason?.message || "Không thể tải dữ liệu module mới.", "error");
+            }
+
+            async function loadLoans3() {
+                const body = document.getElementById("loans3-table");
+                try {
+                    const data = await api(`/api/v3/loans/user/${encodeURIComponent(userId)}`);
+                    if (!Array.isArray(data)) throw new Error("Dữ liệu giao dịch mới không đúng định dạng.");
+                    loans3 = data;
+                    body.replaceChildren();
+                    if (!data.length) {
+                        body.innerHTML = '<tr><td class="empty" colspan="6">Chưa có giao dịch trong module mới.</td></tr>';
+                        return;
+                    }
+                    data.forEach(loan => {
+                        const row = document.createElement("tr");
+                        row.append(makeElement("td", "book-name", loan.book?.title || "Sách"),
+                            makeElement("td", "", formatDate(loan.borrowDate)),
+                            makeElement("td", "", formatDate(loan.dueDate)));
+                        const status = document.createElement("td");
+                        status.append(makeElement("span", `status ${String(loan.status || "").toLowerCase()}`, loanStatusLabel(loan.status)));
+                        row.append(status, makeElement("td", "", formatPrice(loan.fineAmount)));
+                        const actions = document.createElement("td");
+                        if (["BORROWED", "EXTENDED"].includes(loan.status)) {
+                            const renew = makeElement("button", "module-action", "Gia hạn 7 ngày");
+                            renew.type = "button";
+                            renew.addEventListener("click", () => renewLoan3(loan, renew));
+                            actions.append(renew);
+                        } else {
+                            actions.textContent = "—";
+                        }
+                        row.append(actions);
+                        body.append(row);
+                    });
+                } catch (error) {
+                    body.innerHTML = `<tr><td class="error-state" colspan="6">${escapeHtml(error.message)}</td></tr>`;
+                    throw error;
+                }
+            }
+
+            async function renewLoan3(loan, button) {
+                if (!window.confirm(`Gia hạn sách "${loan.book?.title || "này"}" thêm 7 ngày?`)) return;
+                button.disabled = true;
+                try {
+                    await api(`/api/v3/loans/${encodeURIComponent(loan.id)}/renew`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ extraDays: 7 })
+                    });
+                    showModule3Notice("Đã gia hạn thêm 7 ngày.", "success");
+                    await loadLoans3();
+                } catch (error) {
+                    button.disabled = false;
+                    showModule3Notice(error.message, "error");
+                }
+            }
+
+            async function loadFines3() {
+                const body = document.getElementById("fines3-table");
+                try {
+                    const data = await api(`/api/v3/loans/fines/user/${encodeURIComponent(userId)}`);
+                    if (!Array.isArray(data)) throw new Error("Dữ liệu biên lai không đúng định dạng.");
+                    body.replaceChildren();
+                    if (!data.length) {
+                        body.innerHTML = '<tr><td class="empty" colspan="5">Bạn chưa có khoản phạt.</td></tr>';
+                        return;
+                    }
+                    data.forEach(fine => {
+                        const row = document.createElement("tr");
+                        row.append(makeElement("td", "", fine.loanRecord?.book?.title || "—"),
+                            makeElement("td", "", `${Number(fine.overdueDays) || 0} ngày`),
+                            makeElement("td", "", formatPrice(fine.totalFine)));
+                        const status = document.createElement("td");
+                        status.append(makeElement("span", `status ${fine.isPaid ? "returned" : "overdue"}`, fine.isPaid ? "Đã thanh toán" : "Chưa thanh toán"));
+                        row.append(status);
+                        const actions = document.createElement("td");
+                        if (!fine.isPaid) {
+                            const method = document.createElement("select");
+                            method.setAttribute("aria-label", "Phương thức thanh toán");
+                            [["CASH", "Tiền mặt"], ["BANKING", "Chuyển khoản"], ["WALLET", "Ví điện tử"]]
+                                .forEach(([value, label]) => method.add(new Option(label, value)));
+                            const pay = makeElement("button", "module-action", "Ghi nhận đã thanh toán");
+                            pay.type = "button";
+                            pay.addEventListener("click", () => payFine3(fine, method.value, pay));
+                            actions.append(method, pay);
+                        } else {
+                            actions.textContent = fine.paymentMethod || "—";
+                        }
+                        row.append(actions);
+                        body.append(row);
+                    });
+                } catch (error) {
+                    body.innerHTML = `<tr><td class="error-state" colspan="5">${escapeHtml(error.message)}</td></tr>`;
+                    throw error;
+                }
+            }
+
+            async function payFine3(fine, paymentMethod, button) {
+                if (!window.confirm("Ghi nhận khoản phạt này đã được thanh toán? Hành động này không thực hiện giao dịch thu tiền.")) return;
+                button.disabled = true;
+                try {
+                    await api(`/api/v3/loans/fines/${encodeURIComponent(fine.id)}/pay`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ paymentMethod })
+                    });
+                    showModule3Notice("Đã ghi nhận phương thức thanh toán.", "success");
+                    await loadFines3();
+                } catch (error) {
+                    button.disabled = false;
+                    showModule3Notice(error.message, "error");
+                }
+            }
+
+            async function loadLicenses3() {
+                const body = document.getElementById("licenses3-table");
+                if (!userId) return;
+                try {
+                    const data = await api(`/api/v3/drm/user/${encodeURIComponent(userId)}`);
+                    if (!Array.isArray(data)) throw new Error("Dữ liệu giấy phép không đúng định dạng.");
+                    body.replaceChildren();
+                    if (!data.length) {
+                        body.innerHTML = '<tr><td class="empty" colspan="6">Tài khoản chưa có giấy phép DRM.</td></tr>';
+                        return;
+                    }
+                    data.forEach(license => {
+                        const row = document.createElement("tr");
+                        row.append(makeElement("td", "", license.book?.title || "—"),
+                            makeElement("td", "", license.licenseKey || "—"),
+                            makeElement("td", "", formatDate(license.expiryDate)),
+                            makeElement("td", "", `${Number(license.downloadCount) || 0} / ${Number(license.downloadLimit) || 0}`));
+                        const status = document.createElement("td");
+                        status.append(makeElement("span", `status ${String(license.status || "").toLowerCase()}`, license.status || "Không rõ"));
+                        row.append(status);
+                        const actions = document.createElement("td");
+                        if (license.status === "ACTIVE") {
+                            const unavailable = makeElement("button", "placeholder-action", "Tải tệp · Chưa khả dụng");
+                            unavailable.type = "button";
+                            unavailable.disabled = true;
+                            actions.append(unavailable);
+                        } else {
+                            actions.textContent = "Không thể tải";
+                        }
+                        row.append(actions);
+                        body.append(row);
+                    });
+                } catch (error) {
+                    body.innerHTML = `<tr><td class="error-state" colspan="6">${escapeHtml(error.message)}</td></tr>`;
+                    throw error;
+                }
+            }
+
+            async function loadDownloadLogs3() {
+                const body = document.getElementById("download-logs3-table");
+                try {
+                    const data = await api(`/api/v3/ebooks/logs/user/${encodeURIComponent(userId)}`);
+                    if (!Array.isArray(data)) throw new Error("Dữ liệu nhật ký tải không đúng định dạng.");
+                    body.replaceChildren();
+                    if (!data.length) {
+                        body.innerHTML = '<tr><td class="empty" colspan="4">Chưa có yêu cầu tải E-Book.</td></tr>';
+                        return;
+                    }
+                    data.forEach(log => {
+                        const row = document.createElement("tr");
+                        row.append(makeElement("td", "", formatDateTime(log.requestedAt)),
+                            makeElement("td", "", log.licenseKey || "—"));
+                        const status = document.createElement("td");
+                        status.append(makeElement("span", `status ${String(log.status || "").toLowerCase()}`, log.status || "Không rõ"));
+                        row.append(status, makeElement("td", "", log.reason || "—"));
+                        body.append(row);
+                    });
+                } catch (error) {
+                    body.innerHTML = `<tr><td class="error-state" colspan="4">${escapeHtml(error.message)}</td></tr>`;
+                    throw error;
+                }
+            }
+
+            function showModule3Notice(message, type) {
+                const notice = document.getElementById("module3-notice");
+                notice.textContent = message;
+                notice.className = `notice${type === "error" ? " error" : ""}`;
+                notice.hidden = !message;
+            }
+
+            async function errorMessage(response) {
+                const text = await response.text();
+                if (text) {
+                    try { return JSON.parse(text).message || `Máy chủ trả về lỗi ${response.status}.`; }
+                    catch (_) { return `Máy chủ trả về lỗi ${response.status}.`; }
+                }
+                return `Máy chủ trả về lỗi ${response.status}.`;
+            }
+
+            function renderSummary() {
+                document.getElementById("pending-count").textContent = numberFormat.format(
+                    transactions.filter(item => item.status === "PENDING").length);
+                document.getElementById("active-count").textContent = numberFormat.format(
+                    transactions.filter(item => item.status === "BORROWED").length);
+                document.getElementById("completed-count").textContent = numberFormat.format(
+                    transactions.filter(item => ["RETURNED", "REJECTED", "CANCELED"].includes(item.status)).length);
+            }
+
+            function renderTransactions() {
+                const filter = statusFilter.value;
+                const filtered = transactions
+                    .filter(item => !filter || item.status === filter)
+                    .sort((a, b) => String(b.borrowDate || "").localeCompare(String(a.borrowDate || "")));
+                document.getElementById("history-count").textContent =
+                    `Hiển thị ${filtered.length} / ${transactions.length} giao dịch`;
+                transactionsTable.replaceChildren();
+                if (!filtered.length) {
+                    const cell = document.createElement("td");
+                    cell.colSpan = 7;
+                    cell.className = "empty";
+                    const message = document.createElement("div");
+                    message.append(makeElement("strong", "", transactions.length
+                        ? "Không có giao dịch phù hợp"
+                        : "Bạn chưa mượn sách nào"));
+                    message.append(makeElement("p", "", transactions.length
+                        ? "Hãy chọn trạng thái khác để xem lịch sử."
+                        : "Những yêu cầu mượn của bạn sẽ xuất hiện tại đây."));
+                    if (!transactions.length) {
+                        const link = makeElement("a", "catalog-link", "Khám phá kho sách");
+                        link.href = "/#books";
+                        message.append(link);
+                    }
+                    cell.append(message);
+                    const row = document.createElement("tr");
+                    row.append(cell);
+                    transactionsTable.append(row);
+                    return;
+                }
+
+                filtered.forEach(item => {
+                    const row = document.createElement("tr");
+                    row.append(makeElement("td", "book-name", item.bookTitle || "Sách không còn trong danh mục"),
+                        makeElement("td", "", formatDate(item.borrowDate)),
+                        makeElement("td", "", formatDate(item.dueDate)),
+                        makeElement("td", "", formatDate(item.returnDate)));
+                    const status = document.createElement("td");
+                    status.append(makeElement("span", `status ${String(item.status || "").toLowerCase()}`, statusLabel(item.status)));
+                    row.append(status);
+                    const fine = document.createElement("td");
+                    if (item.status === "BORROWED" && item.dueDate && item.dueDate < new Date().toISOString().slice(0, 10)) {
+                        fine.append(makeElement("span", "fine-placeholder", "Số tiền: Chưa khả dụng"));
+                    } else {
+                        fine.textContent = item.status === "BORROWED" ? "Chưa khả dụng" : "—";
+                    }
+                    row.append(fine);
+                    const actions = document.createElement("td");
+                    if (item.status === "PENDING") {
+                        const cancel = makeElement("button", "cancel-button", "Hủy yêu cầu");
+                        cancel.type = "button";
+                        cancel.addEventListener("click", () => cancelRequest(item, cancel));
+                        actions.append(cancel);
+                    } else if (item.status === "BORROWED") {
+                        const renew = makeElement("button", "placeholder-action", "Gia hạn · Chưa khả dụng");
+                        renew.type = "button";
+                        renew.disabled = true;
+                        actions.append(renew);
+                    } else {
+                        actions.textContent = "—";
+                    }
+                    row.append(actions);
+                    transactionsTable.append(row);
+                });
+            }
+
+            async function cancelRequest(item, button) {
+                if (!window.confirm(`Bạn có chắc muốn hủy yêu cầu mượn "${item.bookTitle}"?`)) return;
+                button.disabled = true;
+                try {
+                    const response = await fetch(`/api/borrows/${encodeURIComponent(item.id)}/cancel`, {
+                        method: "PUT",
+                        headers: { "Authorization": "Bearer " + token, "Accept": "application/json" }
+                    });
+                    if (response.status === 401) {
+                        clearSession();
+                        window.location.replace("/auth.html");
+                        return;
+                    }
+                    if (!response.ok) throw new Error(await errorMessage(response));
+                    showNotice("Đã hủy yêu cầu mượn. Số lượng sách trong kho đã được cập nhật.", "success");
+                    await loadHistory();
+                } catch (error) {
+                    console.error("Không thể hủy yêu cầu mượn:", error);
+                    button.disabled = false;
+                    showNotice(error.message || "Không thể kết nối máy chủ.", "error");
+                }
+            }
+
+            function showNotice(message, type) {
+                const notice = document.getElementById("notice");
+                notice.textContent = message;
+                notice.className = `notice${type === "error" ? " error" : ""}`;
+                notice.hidden = false;
+            }
+
+            function clearSession() {
+                sessionStorage.removeItem("library.token");
+                sessionStorage.removeItem("library.username");
+                sessionStorage.removeItem("library.role");
+            }
+
+            function statusLabel(status) {
+                return ({ PENDING: "Chờ duyệt", BORROWED: "Đang mượn", RETURNED: "Đã trả", REJECTED: "Từ chối", CANCELED: "Đã hủy" })[status] || status || "Không rõ";
+            }
+
+            function loanStatusLabel(status) {
+                return ({ BORROWED: "Đang mượn", EXTENDED: "Đã gia hạn", RETURNED: "Đã trả", OVERDUE: "Quá hạn" })[status] || status || "Không rõ";
+            }
+
+            function formatDate(value) {
+                if (!value) return "—";
+                const parts = String(value).split("-");
+                return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
+            }
+
+            function formatPrice(value) {
+                if (value === null || value === undefined || value === "") return "—";
+                const amount = Number(value);
+                return Number.isFinite(amount) ? `${numberFormat.format(amount)} đ` : "—";
+            }
+
+            function formatDateTime(value) {
+                if (!value) return "—";
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("vi-VN");
+            }
+
+            function escapeHtml(value) {
+                return String(value).replace(/[&<>"']/g, character =>
+                    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+            }
+        })();
+    </script>
+</body>
+</html>
