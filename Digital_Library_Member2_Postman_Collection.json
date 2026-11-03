@@ -1,0 +1,283 @@
+{
+	"info": {
+		"_postman_id": "97f14576-9c70-4394-be24-0c6c9a434549",
+		"name": "Thành viên 2 - Kho sách & Google Books API (Design Patterns)",
+		"description": "Bộ Postman Collection kiểm thử đầy đủ 3 mẫu thiết kế cho Thành viên 2:\n1. Strategy Pattern (Tìm kiếm & lọc sách nâng cao)\n2. Adapter Pattern (Tích hợp Google Books API)\n3. Factory Method Pattern + ISP & LSP (Khởi tạo E-Book, Audio Book, Sách giấy)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Strategy Pattern - Tìm kiếm & Lọc nâng cao",
+			"item": [
+				{
+					"name": "1.1 Tìm kiếm theo Tiêu đề (TITLE Strategy)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/search?strategy=TITLE&keyword=Design",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "search"],
+							"query": [
+								{ "key": "strategy", "value": "TITLE", "description": "Chiến lược tìm theo tiêu đề" },
+								{ "key": "keyword", "value": "Design", "description": "Từ khóa tìm kiếm" }
+							]
+						},
+						"description": "Thực thi TitleSearchStrategy2: Lọc theo tiêu đề sách, không phân biệt hoa/thường và sắp xếp Alphabet."
+					}
+				},
+				{
+					"name": "1.2 Tìm kiếm theo Tác giả (AUTHOR Strategy)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/search?strategy=AUTHOR&author=Robert",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "search"],
+							"query": [
+								{ "key": "strategy", "value": "AUTHOR" },
+								{ "key": "author", "value": "Robert" }
+							]
+						},
+						"description": "Thực thi AuthorSearchStrategy2: Lọc theo tên tác giả (ví dụ: Robert C. Martin)."
+					}
+				},
+				{
+					"name": "1.3 Lọc theo Thể loại (CATEGORY Strategy)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/search?strategy=CATEGORY&category=Công nghệ",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "search"],
+							"query": [
+								{ "key": "strategy", "value": "CATEGORY" },
+								{ "key": "category", "value": "Công nghệ" }
+							]
+						},
+						"description": "Thực thi CategorySearchStrategy2: Lọc danh mục theo thể loại sách."
+					}
+				},
+				{
+					"name": "1.4 Tìm kiếm kết hợp đa tiêu chí & Còn tồn kho (ADVANCED Strategy)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/search?strategy=ADVANCED&keyword=Java&onlyAvailable=true",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "search"],
+							"query": [
+								{ "key": "strategy", "value": "ADVANCED" },
+								{ "key": "keyword", "value": "Java" },
+								{ "key": "onlyAvailable", "value": "true", "description": "Chỉ lấy sách có số lượng > 0" }
+							]
+						},
+						"description": "Thực thi AdvancedCombinedSearchStrategy2: Kết hợp từ khóa, kiểm tra số lượng tồn kho khả dụng."
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Adapter Pattern - Google Books API",
+			"item": [
+				{
+					"name": "2.1 Tra cứu sách theo từ khóa (Google Books)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/google/search?q=Clean+Architecture&maxResults=5",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "google", "search"],
+							"query": [
+								{ "key": "q", "value": "Clean Architecture", "description": "Tên sách hoặc chủ đề" },
+								{ "key": "maxResults", "value": "5", "description": "Số lượng kết quả tối đa" }
+							]
+						},
+						"description": "Gửi yêu cầu đến Google Books API thông qua GoogleBooksAdapter2. Tự động tính giá bìa và giá thuê ước tính."
+					}
+				},
+				{
+					"name": "2.2 Tra cứu sách theo mã ISBN (Google Books)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/google/search?q=isbn:9780132350884&maxResults=1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "google", "search"],
+							"query": [
+								{ "key": "q", "value": "isbn:9780132350884" },
+								{ "key": "maxResults", "value": "1" }
+							]
+						},
+						"description": "Tra cứu chính xác theo mã ISBN quốc tế của cuốn sách Clean Code."
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Factory Method Pattern - Khởi tạo tài liệu đa hình",
+			"item": [
+				{
+					"name": "3.1 Tạo E-Book (DigitalDownloadable2)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Lập trình Spring Boot 3 & Microservices\",\n  \"author\": \"Đỗ Văn Duy\",\n  \"category\": \"Công nghệ thông tin\",\n  \"isbn\": \"9786040123456\",\n  \"quantity\": 25,\n  \"coverPrice\": 280000,\n  \"rentalPrice\": 25000,\n  \"itemType\": \"EBOOK\",\n  \"fileFormat\": \"PDF\",\n  \"fileSizeMb\": 18.5,\n  \"downloadUrl\": \"https://library.test/downloads/spring-boot-3.pdf\",\n  \"description\": \"Tài liệu hướng dẫn thực chiến phát triển kiến trúc Microservices với Spring Boot 3.\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/factory/create",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "factory", "create"]
+						},
+						"description": "Sử dụng EBookCreator2 để khởi tạo đối tượng EBookItem2 cài đặt giao diện DigitalDownloadable2."
+					}
+				},
+				{
+					"name": "3.2 Tạo Audio Book (AudioStreamable2)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Tuổi Trẻ Đáng Giá Bao Nhiêu (Audio)\",\n  \"author\": \"Rosie Nguyễn\",\n  \"category\": \"Kỹ năng sống\",\n  \"isbn\": \"9786045876543\",\n  \"quantity\": 40,\n  \"coverPrice\": 150000,\n  \"rentalPrice\": 15000,\n  \"itemType\": \"AUDIOBOOK\",\n  \"durationMinutes\": 360,\n  \"narrator\": \"Phát thanh viên Kim Oanh\",\n  \"streamUrl\": \"https://stream.library.test/audio/tuoi-tre-dang-gia-bao-nhieu.mp3\",\n  \"description\": \"Sách nói truyền cảm hứng phát triển bản thân và định hướng tương lai cho người trẻ.\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/factory/create",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "factory", "create"]
+						},
+						"description": "Sử dụng AudioBookCreator2 để khởi tạo AudioBookItem2 cài đặt giao diện AudioStreamable2."
+					}
+				},
+				{
+					"name": "3.3 Tạo Sách giấy vật lý (PhysicalShelvable2)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Giải Thuật và Cấu Trúc Dữ Liệu (Bản in)\",\n  \"author\": \"Nguyễn Đức Nghĩa\",\n  \"category\": \"Khoa học máy tính\",\n  \"isbn\": \"9786049988776\",\n  \"quantity\": 12,\n  \"coverPrice\": 195000,\n  \"rentalPrice\": 18000,\n  \"itemType\": \"PHYSICAL\",\n  \"shelfLocation\": \"Kho sách Khoa học - Kệ CS-02 (Tầng 2)\",\n  \"description\": \"Giáo trình căn bản về giải thuật, độ phức tạp tính toán và cấu trúc dữ liệu kinh điển.\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/factory/create",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "factory", "create"]
+						},
+						"description": "Sử dụng PhysicalBookCreator2 để khởi tạo PhysicalBookItem2 cài đặt giao diện PhysicalShelvable2."
+					}
+				},
+				{
+					"name": "3.4 Tự động Import từ Google Books (Adapter -> Factory -> Database)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"query\": \"Refactoring Improving the Design of Existing Code\",\n  \"itemType\": \"EBOOK\",\n  \"quantity\": 20,\n  \"fileFormat\": \"PDF\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/google/import",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "google", "import"]
+						},
+						"description": "Kéo metadata từ Google Books qua Adapter, đưa vào Factory Method để khởi tạo E-Book và lưu tự động vào Database."
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Metadata & Chi tiết tài liệu",
+			"item": [
+				{
+					"name": "4.1 Lấy Metadata chi tiết của sách (ID = 1)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/books/v2/1/metadata",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books", "v2", "1", "metadata"]
+						},
+						"description": "Trả về chi tiết sách kết hợp dữ liệu từ 3 bảng: Book, BookPrice và CatalogBookMetadata2."
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Tiện ích Thư viện (Đăng nhập & Trang chủ)",
+			"item": [
+				{
+					"name": "5.1 Đăng nhập lấy Token (Admin: admin / admin123)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/login",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "5.2 Danh sách sách hiển thị Trang chủ (API Thành viên 1)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/books",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "books"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
