@@ -606,8 +606,11 @@
                         row.append(status);
                         const actions = document.createElement("td");
                         if (license.status === "ACTIVE") {
-                            const download = makeElement("button", "module-action", "Tải PDF");
+                            const canDownload = hasRemainingDownloads(license);
+                            const download = makeElement("button", "module-action",
+                                canDownload ? "Tải PDF" : "Đã hết lượt");
                             download.type = "button";
+                            download.disabled = !canDownload;
                             download.addEventListener("click", () => downloadEBook3(license, download));
                             actions.append(download);
                         } else {
@@ -627,6 +630,12 @@
                     showModule3Notice("Giấy phép không có đủ thông tin để tải PDF.", "error");
                     return;
                 }
+                if (!hasRemainingDownloads(license)) {
+                    button.disabled = true;
+                    button.textContent = "Đã hết lượt";
+                    showModule3Notice("Giấy phép này đã hết lượt tải.", "error");
+                    return;
+                }
                 button.disabled = true;
                 try {
                     const response = await fetch("/api/v3/ebooks/download", {
@@ -638,6 +647,23 @@
                         },
                         body: JSON.stringify({ bookId: license.book.id, licenseKey: license.licenseKey })
                     });
+                    if (response.status === 409) {
+                        const message = await errorMessage(response);
+                        license.downloadCount = Math.max(
+                            Number(license.downloadCount) || 0, Number(license.downloadLimit) || 0);
+                        button.disabled = true;
+                        button.textContent = "Đã hết lượt";
+                        showModule3Notice(message, "error");
+                        try {
+                            await loadLicenses3();
+                        } catch (refreshError) {
+                            console.error("Không thể cập nhật giấy phép sau khi hết lượt tải:", refreshError);
+                            showModule3Notice(
+                                `${message} Không thể cập nhật số lượt hiện tại: ${refreshError.message}`,
+                                "error");
+                        }
+                        return;
+                    }
                     if (response.status === 401) {
                         clearSession();
                         window.location.replace("/auth.html");
@@ -658,6 +684,11 @@
                     link.remove();
                     window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
                     const remaining = response.headers.get("X-Remaining-Downloads");
+                    if (remaining === null) {
+                        license.downloadCount = (Number(license.downloadCount) || 0) + 1;
+                    } else {
+                        license.downloadCount = Number(license.downloadLimit) - Number(remaining);
+                    }
                     showModule3Notice(
                         remaining === null
                             ? "Đã tải E-Book PDF."
@@ -667,8 +698,20 @@
                 } catch (error) {
                     showModule3Notice(error.message, "error");
                 } finally {
-                    button.disabled = false;
+                    if (hasRemainingDownloads(license)) {
+                        button.disabled = false;
+                    } else {
+                        button.disabled = true;
+                        button.textContent = "Đã hết lượt";
+                    }
                 }
+            }
+
+            function hasRemainingDownloads(license) {
+                const downloadCount = Number(license.downloadCount);
+                const downloadLimit = Number(license.downloadLimit);
+                return Number.isFinite(downloadCount) && Number.isFinite(downloadLimit)
+                    && downloadCount < downloadLimit;
             }
 
             async function loadDownloadLogs3() {

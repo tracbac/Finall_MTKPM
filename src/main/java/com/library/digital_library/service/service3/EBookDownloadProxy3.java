@@ -112,7 +112,8 @@ public class EBookDownloadProxy3 implements EBookDownloadService3 {
         // Kiểm tra hạn mức số lượt tải (Download Limit)
         if (license.getDownloadCount() >= license.getDownloadLimit()) {
             logAudit(request, "DENIED", "Đã đạt giới hạn số lần tải tối đa: " + license.getDownloadLimit());
-            throw new SecurityException("[Proxy từ chối] Bạn đã tải hết số lượt tối đa cho phép (" + license.getDownloadLimit() + " lần)!");
+            throw new DownloadLimitExceededException(
+                    "[Proxy từ chối] Bạn đã tải hết số lượt tối đa cho phép (" + license.getDownloadLimit() + " lần)!");
         }
 
         // 5. Mọi kiểm tra hợp lệ -> Cập nhật số lần tải

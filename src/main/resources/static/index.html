@@ -149,6 +149,26 @@
         .category-chip.active { border-color: var(--green); background: var(--green); color: #fff; }
         .result-line { margin: 0 0 15px; color: var(--muted); font-size: 11px; }
         .book-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+        .pagination {
+            display: flex; align-items: center; justify-content: center; gap: 18px;
+            margin-top: 32px; color: var(--ink); font-size: 14px;
+        }
+        .pagination-page { display: flex; align-items: center; gap: 12px; }
+        .pagination select {
+            min-width: 90px; height: 44px; padding: 0 34px 0 15px; border: 1px solid #d9d9d3;
+            border-radius: 6px; background: var(--paper); color: var(--ink); font-weight: 600;
+        }
+        .pagination button {
+            width: 56px; height: 56px; display: grid; place-items: center;
+            border: 1px solid #d9d9d3; border-radius: 50%; background: var(--paper);
+            color: var(--ink); cursor: pointer; transition: background .18s ease, border-color .18s ease;
+        }
+        .pagination button:hover:not(:disabled) { border-color: #9baa9d; background: #f3f5f0; }
+        .pagination button:disabled { background: #f1f1ef; color: #b8bcb8; cursor: not-allowed; }
+        .pagination button svg { width: 23px; height: 23px; }
+        .pagination select:focus-visible, .pagination button:focus-visible {
+            outline: 2px solid var(--green); outline-offset: 3px;
+        }
         .book-card {
             min-width: 0; overflow: hidden; border: 1px solid #ecece5; border-radius: 13px;
             background: var(--paper); transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
@@ -287,6 +307,11 @@
             .category-list { flex-wrap: nowrap; width: 100%; overflow-x: auto; padding-bottom: 4px; }
             .category-chip { flex: 0 0 auto; }
             .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+            .pagination { gap: 10px; font-size: 12px; }
+            .pagination-page { gap: 7px; }
+            .pagination select { min-width: 70px; height: 40px; padding: 0 25px 0 11px; }
+            .pagination button { width: 42px; height: 42px; }
+            .pagination button svg { width: 20px; height: 20px; }
             .book-visual { height: 173px; }
             .cover-placeholder { width: 101px; height: 143px; padding: 13px 11px; }
             .cover-placeholder strong { font-size: 15px; }
@@ -402,6 +427,21 @@
                 <div class="skeleton"></div>
                 <div class="skeleton"></div>
             </div>
+            <nav class="pagination" id="book-pagination" aria-label="Phân trang sách" hidden>
+                <label class="pagination-page" for="book-page">
+                    <span>Trang</span>
+                    <select id="book-page" aria-label="Chọn trang sách"></select>
+                </label>
+                <span id="page-count" aria-live="polite"></span>
+                <button id="previous-page" type="button" aria-label="Trang trước" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <button id="next-page" type="button" aria-label="Trang sau">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+                </button>
+            </nav>
         </section>
 
         <section class="shell" id="about">
@@ -457,14 +497,21 @@
             const searchInput = document.getElementById("book-search");
             const categoryList = document.getElementById("category-list");
             const resultLine = document.getElementById("result-line");
+            const pagination = document.getElementById("book-pagination");
+            const pageSelect = document.getElementById("book-page");
+            const pageCountLabel = document.getElementById("page-count");
+            const previousPageButton = document.getElementById("previous-page");
+            const nextPageButton = document.getElementById("next-page");
             const dialog = document.getElementById("book-dialog");
             const borrowForm = document.getElementById("borrow-form");
             const borrowSubmit = document.getElementById("borrow-submit");
             const borrowMessage = document.getElementById("borrow-message");
             const numberFormat = new Intl.NumberFormat("vi-VN");
+            const pageSize = 8;
             let books = [];
             let selectedCategory = "";
             let searchTerm = "";
+            let currentPage = 1;
             let selectedBook = null;
             let requestSubmitted = false;
 
@@ -481,8 +528,15 @@
             borrowForm.addEventListener("submit", submitBorrowRequest);
             searchInput.addEventListener("input", () => {
                 searchTerm = searchInput.value.trim().toLocaleLowerCase("vi");
+                currentPage = 1;
                 renderBooks();
             });
+            pageSelect.addEventListener("change", () => {
+                currentPage = Number(pageSelect.value);
+                renderBooks();
+            });
+            previousPageButton.addEventListener("click", () => changePage(currentPage - 1));
+            nextPageButton.addEventListener("click", () => changePage(currentPage + 1));
 
             function renderAccountActions() {
                 const actions = document.querySelector(".top-actions");
@@ -556,7 +610,13 @@
 
             function selectCategory(category) {
                 selectedCategory = category;
+                currentPage = 1;
                 renderCategories();
+                renderBooks();
+            }
+
+            function changePage(page) {
+                currentPage = page;
                 renderBooks();
             }
 
@@ -614,8 +674,11 @@
             function renderBooks() {
                 const filtered = getFilteredBooks();
                 grid.replaceChildren();
-                resultLine.textContent = `Hiển thị ${filtered.length} / ${books.length} đầu sách`;
+                const pageCount = Math.ceil(filtered.length / pageSize);
+                currentPage = Math.min(Math.max(currentPage, 1), Math.max(pageCount, 1));
+                renderPagination(pageCount);
                 if (!filtered.length) {
+                    resultLine.textContent = `Hiển thị 0 / ${books.length} đầu sách`;
                     const empty = makeElement("div", "state-panel");
                     empty.append(
                         makeElement("strong", "", books.length ? "Chưa tìm thấy cuốn sách phù hợp" : "Thư viện chưa có sách"),
@@ -626,7 +689,26 @@
                     grid.append(empty);
                     return;
                 }
-                filtered.forEach((book, index) => grid.append(createBookCard(book, index)));
+                const startIndex = (currentPage - 1) * pageSize;
+                const visibleBooks = filtered.slice(startIndex, startIndex + pageSize);
+                resultLine.textContent =
+                    `Hiển thị ${startIndex + 1}–${startIndex + visibleBooks.length} / ${filtered.length} đầu sách`;
+                visibleBooks.forEach((book, index) =>
+                    grid.append(createBookCard(book, startIndex + index)));
+            }
+
+            function renderPagination(pageCount) {
+                pagination.hidden = pageCount <= 1;
+                pageSelect.replaceChildren();
+                for (let page = 1; page <= pageCount; page += 1) {
+                    const option = makeElement("option", "", String(page));
+                    option.value = String(page);
+                    option.selected = page === currentPage;
+                    pageSelect.append(option);
+                }
+                pageCountLabel.textContent = `trong ${pageCount}`;
+                previousPageButton.disabled = currentPage <= 1;
+                nextPageButton.disabled = currentPage >= pageCount;
             }
 
             function updateStats() {

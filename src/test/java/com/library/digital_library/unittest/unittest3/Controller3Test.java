@@ -11,6 +11,7 @@ import com.library.digital_library.repository.repository3.DownloadLog3Repository
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.service.service3.DrmLicenseService3;
 import com.library.digital_library.service.service3.EBookDownloadService3;
+import com.library.digital_library.service.service3.DownloadLimitExceededException;
 import com.library.digital_library.service.service3.LoanService3;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -184,5 +185,27 @@ class Controller3Test {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("[Proxy từ chối] Bạn đang nợ phạt quá hạn!"));
+    }
+
+    @Test
+    @DisplayName("API POST /api/v3/ebooks/download: Trả về HTTP 409 khi giấy phép hết lượt tải")
+    void testApiDownloadEBook_QuotaExceeded() throws Exception {
+        DownloadRequest3 request = new DownloadRequest3();
+        request.setBookId(2L);
+        request.setLicenseKey("DRM-KEY-EXHAUSTED");
+        User authenticatedUser = new User();
+        authenticatedUser.setId(1L);
+        authenticatedUser.setUsername("alice");
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(authenticatedUser));
+        when(eBookDownloadService.downloadEBook(any(DownloadRequest3.class)))
+                .thenThrow(new DownloadLimitExceededException("Giấy phép đã hết lượt tải."));
+
+        mockMvcEbooks.perform(post("/api/v3/ebooks/download")
+                        .principal(() -> "alice")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Giấy phép đã hết lượt tải."));
     }
 }
