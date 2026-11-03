@@ -2,7 +2,7 @@
 
 E-Book PDFs are stored in a separate **private** Supabase Storage bucket. Configure
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_EBOOKS_BUCKET` in the
-server environment (the bucket defaults to `ebooks`). Keep the service-role key
+server environment (the bucket defaults to `e-books-pdf`). Keep the service-role key
 on the server; do not expose it in browser code or commit it to Git.
 
 Create the configured bucket in Supabase Storage as private and allow uploads of

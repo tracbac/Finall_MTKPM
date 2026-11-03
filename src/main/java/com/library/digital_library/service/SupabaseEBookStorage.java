@@ -33,7 +33,7 @@ public class SupabaseEBookStorage {
             RestTemplateBuilder restTemplateBuilder,
             @Value("${supabase.url}") String supabaseUrl,
             @Value("${supabase.key}") String serviceKey,
-            @Value("${supabase.ebooks-bucket:ebooks}") String bucketName) {
+            @Value("${supabase.ebooks-bucket:e-books-pdf}") String bucketName) {
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(Duration.ofSeconds(5))
                 .setReadTimeout(Duration.ofSeconds(30))
