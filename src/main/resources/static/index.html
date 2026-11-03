@@ -6,6 +6,9 @@
     <meta name="theme-color" content="#f7f6f1">
     <meta name="description" content="Khám phá sách hay và những câu chuyện đáng nhớ tại thư viện số.">
     <title>Trang chủ | Thư viện Mộc</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
             color-scheme: light;
@@ -27,7 +30,7 @@
             margin: 0;
             background: var(--cream);
             color: var(--ink);
-            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            font-family: "Lora", Georgia, serif;
             -webkit-font-smoothing: antialiased;
         }
         button, input { font: inherit; }
@@ -43,7 +46,7 @@
             background: rgba(247, 246, 241, .92);
         }
         .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 28px; }
-        .brand { display: inline-flex; align-items: center; gap: 11px; font-family: "Times New Roman", serif; font-size: 23px; font-weight: 700; }
+        .brand { display: inline-flex; align-items: center; gap: 11px; font-family: "Merriweather", Georgia, serif; font-size: 23px; font-weight: 700; }
         .brand-mark {
             width: 40px; height: 40px; display: grid; place-items: center;
             color: #fff; background: var(--green); border-radius: 13px 13px 13px 4px;
@@ -80,7 +83,7 @@
         .eyebrow::before { content: ""; width: 22px; height: 1px; background: currentColor; }
         h1, h2, p { margin-top: 0; }
         .hero h1 {
-            max-width: 540px; margin-bottom: 16px; font-family: "Times New Roman", Georgia, serif;
+            max-width: 540px; margin-bottom: 16px; font-family: "Merriweather", Georgia, serif;
             font-size: clamp(42px, 5vw, 65px); font-weight: 500; line-height: 1.05; letter-spacing: normal;
         }
         .hero h1 em { color: var(--green); font-weight: 500; }
@@ -105,9 +108,9 @@
         .hero-book.back { left: 42%; width: 143px; height: 202px; background: #c47d56; transform: translate(-50%, -43%) rotate(-18deg); }
         .hero-book.front { left: 56%; display: flex; flex-direction: column; justify-content: space-between; padding: 23px 20px; background: #345b44; color: #f7f4e9; transform: translate(-50%, -48%) rotate(9deg); }
         .hero-book::before { content: ""; position: absolute; top: 0; bottom: 0; left: 10px; width: 1px; background: rgba(255,255,255,.26); }
-        .book-cover-label { font-family: "Times New Roman", serif; font-size: 9px; letter-spacing: 1.8px; text-transform: uppercase; }
-        .book-cover-title { font-family: "Times New Roman", serif; font-size: 24px; line-height: 1.07; }
-        .book-cover-stamp { width: 43px; height: 43px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; font-family: "Times New Roman", serif; font-size: 18px; }
+        .book-cover-label { font-family: "Merriweather", Georgia, serif; font-size: 9px; letter-spacing: 1.8px; text-transform: uppercase; }
+        .book-cover-title { font-family: "Merriweather", Georgia, serif; font-size: 24px; line-height: 1.07; }
+        .book-cover-stamp { width: 43px; height: 43px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; font-family: "Merriweather", Georgia, serif; font-size: 18px; }
         .float-note {
             position: absolute; right: 2%; bottom: 13%; display: flex; align-items: center; gap: 10px;
             padding: 12px 15px; border: 1px solid rgba(255,255,255,.8); border-radius: 13px;
@@ -121,13 +124,13 @@
         .stat { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 82px; border-bottom: 1px solid var(--line); }
         .stat-icon { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 12px; background: #e9eee5; color: var(--green); }
         .stat-icon svg { width: 18px; height: 18px; }
-        .stat-value { display: block; font-family: "Times New Roman", serif; font-size: 20px; font-weight: 700; }
+        .stat-value { display: block; font-family: "Merriweather", Georgia, serif; font-size: 20px; font-weight: 700; }
         .stat-label { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
 
         .catalog { padding: 70px 0 82px; }
         .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
         .section-heading .eyebrow { margin-bottom: 10px; }
-        .section-heading h2 { margin-bottom: 0; font-family: "Times New Roman", serif; font-size: clamp(30px, 3.6vw, 39px); font-weight: 500; }
+        .section-heading h2 { margin-bottom: 0; font-family: "Merriweather", Georgia, serif; font-size: clamp(30px, 3.6vw, 39px); font-weight: 500; }
         .section-description { margin: 9px 0 0; color: var(--muted); font-size: 13px; }
         .view-all { display: inline-flex; align-items: center; gap: 9px; padding: 8px 0; color: var(--green); font-size: 12px; font-weight: 700; }
         .view-all svg { width: 15px; height: 15px; }
@@ -194,7 +197,7 @@
         .tone-5 .cover-placeholder { background: #3d6074; }
         .cover-placeholder::before { content: ""; position: absolute; inset: 0 auto 0 8px; width: 1px; background: rgba(255,255,255,.3); }
         .cover-placeholder small { font-size: 6px; letter-spacing: 1.25px; text-transform: uppercase; opacity: .8; }
-        .cover-placeholder strong { display: -webkit-box; overflow: hidden; font-family: "Times New Roman", serif; font-size: 17px; font-weight: 500; line-height: 1.13; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+        .cover-placeholder strong { display: -webkit-box; overflow: hidden; font-family: "Merriweather", Georgia, serif; font-size: 17px; font-weight: 500; line-height: 1.13; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
         .cover-placeholder span { font-size: 8px; opacity: .83; }
         .availability {
             position: absolute; top: 12px; left: 12px; z-index: 1; padding: 6px 9px; border-radius: 999px;
@@ -203,7 +206,7 @@
         .availability.unavailable { color: #9a574a; }
         .card-content { padding: 15px 15px 14px; }
         .book-category { display: block; overflow: hidden; margin-bottom: 8px; color: #829087; font-size: 9px; font-weight: 700; letter-spacing: .9px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
-        .book-title { display: -webkit-box; min-height: 43px; overflow: hidden; margin: 0 0 5px; font-family: "Times New Roman", serif; font-size: 17px; font-weight: 600; line-height: 1.25; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        .book-title { display: -webkit-box; min-height: 43px; overflow: hidden; margin: 0 0 5px; font-family: "Merriweather", Georgia, serif; font-size: 17px; font-weight: 600; line-height: 1.25; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
         .book-author { overflow: hidden; margin: 0 0 15px; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
         .card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid #efefe9; }
         .rental-price { color: var(--green); font-size: 12px; font-weight: 750; }
@@ -212,7 +215,7 @@
         .detail-button:hover { border-color: var(--green); background: var(--green-soft); }
 
         .state-panel { grid-column: 1 / -1; padding: 62px 20px; border: 1px dashed #dfe3da; border-radius: 13px; text-align: center; color: var(--muted); }
-        .state-panel strong { display: block; margin: 0 0 7px; color: var(--ink); font-family: "Times New Roman", serif; font-size: 20px; font-weight: 500; }
+        .state-panel strong { display: block; margin: 0 0 7px; color: var(--ink); font-family: "Merriweather", Georgia, serif; font-size: 20px; font-weight: 500; }
         .state-panel p { margin: 0; font-size: 12px; line-height: 1.6; }
         .retry-button { margin-top: 15px; padding: 9px 15px; border: 0; border-radius: 8px; background: var(--green); color: white; cursor: pointer; font-size: 11px; font-weight: 700; }
         .skeleton { height: 338px; overflow: hidden; position: relative; border-radius: 13px; background: #eeeee7; }
@@ -220,7 +223,7 @@
         @keyframes shimmer { 100% { transform: translateX(100%); } }
 
         .bottom-banner { display: flex; align-items: center; justify-content: space-between; gap: 30px; margin-bottom: 76px; padding: 30px 38px; border-radius: 15px; background: #e9eee5; }
-        .bottom-banner h2 { margin: 0 0 7px; font-family: "Times New Roman", serif; font-size: 23px; font-weight: 500; }
+        .bottom-banner h2 { margin: 0 0 7px; font-family: "Merriweather", Georgia, serif; font-size: 23px; font-weight: 500; }
         .bottom-banner p { margin: 0; color: #6d786f; font-size: 12px; }
         .text-link { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; color: var(--green); font-size: 12px; font-weight: 750; }
         .text-link svg { width: 16px; height: 16px; }
@@ -244,7 +247,7 @@
         .dialog-close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--ink); cursor: pointer; }
         .dialog-close svg { width: 16px; height: 16px; }
         .dialog-copy .book-category { margin: 0 35px 9px 0; }
-        .dialog-copy h2 { margin: 0 0 8px; font-family: "Times New Roman", serif; font-size: 27px; font-weight: 500; line-height: 1.14; }
+        .dialog-copy h2 { margin: 0 0 8px; font-family: "Merriweather", Georgia, serif; font-size: 27px; font-weight: 500; line-height: 1.14; }
         .dialog-author { margin: 0 0 17px; color: var(--muted); font-size: 12px; }
         .detail-list { display: grid; gap: 10px; margin: 0; }
         .detail-row { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 9px; border-bottom: 1px solid #efefe9; font-size: 11px; }
@@ -340,7 +343,7 @@
                 <span class="brand-mark" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 5.5v12M8 7h8M8 10h7"/></svg>
                 </span>
-                <span>thư viện mộc</span>
+                <span>Thư viện mộc</span>
             </a>
             <nav class="nav-links" aria-label="Điều hướng chính">
                 <a href="#home">Trang chủ</a>

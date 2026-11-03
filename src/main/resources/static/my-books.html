@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f7f6f1">
     <title>Sách của tôi | Thư viện Mộc</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
             color-scheme: light;
@@ -19,14 +22,14 @@
             --amber: #926b2e;
         }
         * { box-sizing: border-box; }
-        body { min-height: 100vh; margin: 0; display: grid; grid-template-rows: auto 1fr auto; background: var(--cream); color: var(--ink); font-family: "Segoe UI", Arial, sans-serif; }
+        body { min-height: 100vh; margin: 0; display: grid; grid-template-rows: auto 1fr auto; background: var(--cream); color: var(--ink); font-family: "Lora", Georgia, serif; }
         button, a { -webkit-tap-highlight-color: transparent; }
         button { font: inherit; }
         a { color: inherit; text-decoration: none; }
         .shell { width: min(1050px, calc(100% - 44px)); margin: 0 auto; }
         .topbar { min-height: 74px; display: flex; align-items: center; border-bottom: 1px solid rgba(43, 61, 48, .08); background: rgba(255, 254, 250, .88); }
         .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-        .brand { display: inline-flex; align-items: center; gap: 10px; font-family: "Times New Roman", serif; font-size: 21px; font-weight: 700; }
+        .brand { display: inline-flex; align-items: center; gap: 10px; font-family: "Merriweather", Georgia, serif; font-size: 21px; font-weight: 700; }
         .brand-mark { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 12px 12px 12px 4px; background: var(--green); color: #fff; }
         .brand-mark svg { width: 20px; height: 20px; }
         .header-actions { display: flex; align-items: center; gap: 10px; }
@@ -36,15 +39,15 @@
         .heading { margin-bottom: 25px; }
         .eyebrow { margin-bottom: 9px; color: var(--green); font-size: 10px; font-weight: 750; letter-spacing: 1.5px; text-transform: uppercase; }
         h1, h2, p { margin-top: 0; }
-        h1 { margin-bottom: 9px; font-family: "Times New Roman", serif; font-size: clamp(32px, 5vw, 43px); font-weight: 500; }
+        h1 { margin-bottom: 9px; font-family: "Merriweather", Georgia, serif; font-size: clamp(32px, 5vw, 43px); font-weight: 500; }
         .intro { margin-bottom: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
         .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
         .summary-card { padding: 16px 18px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); }
         .summary-card span { display: block; color: var(--muted); font-size: 10px; }
-        .summary-card strong { display: block; margin-top: 7px; font-family: "Times New Roman", serif; font-size: 25px; font-weight: 500; }
+        .summary-card strong { display: block; margin-top: 7px; font-family: "Merriweather", Georgia, serif; font-size: 25px; font-weight: 500; }
         .panel { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
         .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
-        .panel-head h2 { margin: 0; font-family: "Times New Roman", serif; font-size: 20px; font-weight: 500; }
+        .panel-head h2 { margin: 0; font-family: "Merriweather", Georgia, serif; font-size: 20px; font-weight: 500; }
         .panel-head p { margin: 5px 0 0; color: var(--muted); font-size: 10px; }
         .filter { min-height: 35px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font-size: 10px; }
         .table-wrap { width: 100%; overflow-x: auto; }
@@ -66,7 +69,7 @@
         .ebook-request-form select { min-width: 220px; min-height: 36px; flex: 1; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); color: var(--ink); font-size: 11px; }
         .empty, .loading, .error-state { padding: 42px 18px; color: var(--muted); text-align: center; font-size: 11px; line-height: 1.6; }
         .error-state { color: var(--danger); }
-        .empty strong { display: block; margin-bottom: 6px; color: var(--ink); font-family: "Times New Roman", serif; font-size: 19px; font-weight: 500; }
+        .empty strong { display: block; margin-bottom: 6px; color: var(--ink); font-family: "Merriweather", Georgia, serif; font-size: 19px; font-weight: 500; }
         .empty p { margin: 0; }
         .catalog-link { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; margin-top: 14px; padding: 0 13px; border-radius: 999px; background: var(--green); color: white; font-size: 10px; font-weight: 700; }
         .catalog-link:hover { background: var(--green-dark); }
@@ -82,7 +85,7 @@
         .notification-error { color: var(--danger); }
         .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
         .feature-card { min-height: 160px; display: flex; flex-direction: column; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); }
-        .feature-card h2 { margin: 0 0 7px; font-family: "Times New Roman", serif; font-size: 18px; font-weight: 500; }
+        .feature-card h2 { margin: 0 0 7px; font-family: "Merriweather", Georgia, serif; font-size: 18px; font-weight: 500; }
         .feature-card p { margin: 0 0 12px; color: var(--muted); font-size: 10px; line-height: 1.6; }
         .feature-card .unavailable-badge { margin-top: auto; }
         .unavailable-badge { display: inline-flex; align-items: center; align-self: flex-start; min-height: 22px; padding: 0 8px; border-radius: 999px; background: #f3efe5; color: var(--amber); font-size: 9px; font-weight: 700; }
@@ -113,7 +116,7 @@
         <div class="shell topbar-inner">
             <a class="brand" href="/" aria-label="Thư viện Mộc - Trang chủ">
                 <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 5.5v12M8 7h8M8 10h7"/></svg></span>
-                <span>thư viện mộc</span>
+                <span>Thư viện mộc</span>
             </a>
             <nav class="header-actions" aria-label="Điều hướng">
                 <a class="header-link" href="/">Trang chủ</a>

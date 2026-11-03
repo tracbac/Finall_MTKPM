@@ -19,7 +19,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,5 +64,20 @@ class JwtAuthenticationFilterTest {
                         .map(authority -> authority.getAuthority())
                         .collect(java.util.stream.Collectors.toSet()));
         verify(userDetailsService).loadUserByUsername("admin");
+    }
+
+    @Test
+    void ignoresStaleBearerTokenForPublicRegistration() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/register");
+        request.addHeader("Authorization", "Bearer expired-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean[] chainCalled = {false};
+        FilterChain chain = (servletRequest, servletResponse) -> chainCalled[0] = true;
+
+        filter.doFilter(request, response, chain);
+
+        assertTrue(chainCalled[0]);
+        assertEquals(200, response.getStatus());
+        verifyNoInteractions(jwtUtils, userDetailsService);
     }
 }
