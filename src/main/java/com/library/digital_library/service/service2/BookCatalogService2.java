@@ -85,10 +85,20 @@ public class BookCatalogService2 {
     }
 
     /**
-     * Xem trước danh sách sách từ Google Books API (Dùng Adapter Pattern).
+     * Xem trước danh sách sách từ Google Books API (Dùng Adapter Pattern, trang mặc định là 1).
      */
     public List<ExternalBookDto2> previewFromGoogleBooks(String query, int maxResults) {
         return externalCatalogPort.searchBooks(query, maxResults);
+    }
+
+    /**
+     * Xem trước danh sách sách từ Google Books API có hỗ trợ phân trang (page).
+     */
+    public List<ExternalBookDto2> previewFromGoogleBooks(String query, int page, int maxResults) {
+        if (page <= 1) {
+            return previewFromGoogleBooks(query, maxResults);
+        }
+        return externalCatalogPort.searchBooks(query, page, maxResults);
     }
 
     /**

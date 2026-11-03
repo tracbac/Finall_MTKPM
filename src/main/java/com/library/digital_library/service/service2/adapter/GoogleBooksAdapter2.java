@@ -37,6 +37,21 @@ public class GoogleBooksAdapter2 implements ExternalBookCatalogPort2 {
     }
 
     @Override
+    public List<ExternalBookDto2> searchBooks(String query, int page, int maxResults) {
+        if (page <= 1) {
+            return searchBooks(query, maxResults);
+        }
+        GoogleBooksModel2.GoogleVolumesResponse2 response = googleClient.queryGoogleVolumesApi(query, page, maxResults);
+        if (response == null || response.getItems() == null || response.getItems().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return response.getItems().stream()
+                .map(this::adaptToExternalBookDto)
+                .toList();
+    }
+
+    @Override
     public Optional<ExternalBookDto2> findBookByIsbn(String isbn) {
         if (isbn == null || isbn.isBlank()) {
             return Optional.empty();

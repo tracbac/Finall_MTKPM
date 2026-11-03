@@ -246,6 +246,23 @@ public class Member2CatalogPatternsTest {
             assertFalse(books.isEmpty(), "Fallback offline phải luôn trả về dữ liệu mẫu để hệ thống không bị crash");
             assertTrue(books.get(0).getTitle().contains("Patterns") || books.get(0).getTitle().contains("Clean") || books.get(0).getTitle().contains("Java"));
         }
+
+        @Test
+        @DisplayName("Adapter hỗ trợ phân trang (Pagination) mượt mà qua các trang")
+        void testAdapterPagination() {
+            GoogleBooksRestClient2 client = new GoogleBooksRestClient2();
+            GoogleBooksAdapter2 adapter = new GoogleBooksAdapter2(client);
+
+            List<ExternalBookDto2> page1 = adapter.searchBooks("java", 1, 3);
+            List<ExternalBookDto2> page2 = adapter.searchBooks("java", 2, 3);
+
+            assertNotNull(page1);
+            assertNotNull(page2);
+            assertFalse(page1.isEmpty());
+            assertFalse(page2.isEmpty());
+            // Trang 1 và trang 2 trả về các đầu sách khác nhau
+            assertNotEquals(page1.get(0).getTitle(), page2.get(0).getTitle());
+        }
     }
 
     // =========================================================================
