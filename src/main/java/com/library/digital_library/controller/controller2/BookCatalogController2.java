@@ -43,16 +43,22 @@ public class BookCatalogController2 {
     }
 
     /**
-     * API 2: Tra cứu và xem trước sách từ Google Books API (Áp dụng Adapter Pattern)
-     * URL: GET /api/books/v2/google/search?q=Design+Patterns&maxResults=5
+     * API 2: Tra cứu và xem trước sách từ Google Books API (Áp dụng Adapter Pattern, hỗ trợ phân trang)
+     * URL: GET /api/books/v2/google/search?q=java&page=1&maxResults=6
      */
     @GetMapping("/google/search")
     public ResponseEntity<List<ExternalBookDto2>> searchGoogleBooks(
             @RequestParam(required = false, defaultValue = "Design Patterns") String q,
-            @RequestParam(required = false, defaultValue = "5") int maxResults) {
+            @RequestParam(required = false, defaultValue = "1") int page,
+            @RequestParam(required = false, defaultValue = "6") int maxResults) {
 
-        List<ExternalBookDto2> books = catalogService.previewFromGoogleBooks(q, maxResults);
+        List<ExternalBookDto2> books = catalogService.previewFromGoogleBooks(q, page, maxResults);
         return ResponseEntity.ok(books);
+    }
+
+    // Overload thuận tiện cho Unit Test và gọi trực tiếp
+    public ResponseEntity<List<ExternalBookDto2>> searchGoogleBooks(String q, int maxResults) {
+        return searchGoogleBooks(q, 1, maxResults);
     }
 
     /**

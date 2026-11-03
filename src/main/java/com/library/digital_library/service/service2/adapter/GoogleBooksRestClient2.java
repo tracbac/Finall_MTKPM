@@ -36,8 +36,8 @@ public class GoogleBooksRestClient2 {
 
     public GoogleBooksRestClient2() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(4000);
-        factory.setReadTimeout(4000);
+        factory.setConnectTimeout(8000);
+        factory.setReadTimeout(12000);
         this.restTemplate = new RestTemplate(factory);
         this.objectMapper = new ObjectMapper();
     }
@@ -48,17 +48,27 @@ public class GoogleBooksRestClient2 {
     }
 
     /**
-     * Phương thức đặc thù của Adaptee gọi Google Volumes API.
-     * Tự động chuyển đổi sang OpenLibrary hoặc Offline Mock nếu Google Books chặn 429.
+     * Phương thức đặc thù của Adaptee gọi Google Volumes API (trang mặc định là 1).
      */
     public GoogleBooksModel2.GoogleVolumesResponse2 queryGoogleVolumesApi(String q, int maxResults) {
+        return queryGoogleVolumesApi(q, 1, maxResults);
+    }
+
+    /**
+     * Phương thức đặc thù của Adaptee gọi Google Volumes API có hỗ trợ phân trang (page).
+     * Tự động chuyển đổi sang OpenLibrary hoặc Offline Mock nếu Google Books chặn 429.
+     */
+    public GoogleBooksModel2.GoogleVolumesResponse2 queryGoogleVolumesApi(String q, int page, int maxResults) {
+        int safePage = Math.max(page, 1);
         int safeMaxResults = Math.min(Math.max(maxResults, 1), 20);
+        int startIndex = (safePage - 1) * safeMaxResults;
         String searchQuery = (q != null && !q.isBlank()) ? q.trim() : "Design Patterns";
 
         // 1. Thử gọi Google Books API thật
         try {
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(GOOGLE_BOOKS_API_URL)
                     .queryParam("q", searchQuery)
+                    .queryParam("startIndex", startIndex)
                     .queryParam("maxResults", safeMaxResults);
 
             if (apiKey != null && !apiKey.isBlank()) {
@@ -81,10 +91,11 @@ public class GoogleBooksRestClient2 {
             log.warn("Google Books API trả về lỗi hoặc quá tải ({}) - Đang chuyển sang OpenLibrary trực tuyến...", ex.getMessage());
         }
 
-        // 2. Thử gọi OpenLibrary API trực tuyến thật (hoàn toàn miễn phí, không bị giới hạn 429)
+        // 2. Thử gọi OpenLibrary API trực tuyến thật (hoàn toàn miễn phí, hỗ trợ phân trang chuẩn xác)
         try {
             URI openLibUri = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
                     .queryParam("q", searchQuery)
+                    .queryParam("page", safePage)
                     .queryParam("limit", safeMaxResults)
                     .build()
                     .encode()
@@ -98,13 +109,40 @@ public class GoogleBooksRestClient2 {
                 if (converted != null && converted.getItems() != null && !converted.getItems().isEmpty()) {
                     return converted;
                 }
+
+                // Nếu tìm chính xác bị 0 kết quả (do gõ nhầm chính tả như 'clean achitecture'), tự động nới lỏng tìm kiếm bằng OR
+                if (searchQuery.contains(" ")) {
+                    String orQuery = searchQuery.replaceAll("\\s+", " OR ");
+                    URI orUri = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
+                            .queryParam("q", orQuery)
+                            .queryParam("page", safePage)
+                            .queryParam("limit", safeMaxResults)
+                            .build()
+                            .encode()
+                            .toUri();
+                    log.info("Thử tìm kiếm nới lỏng lỗi chính tả trên OpenLibrary: {}", orUri);
+                    ResponseEntity<String> orRes = restTemplate.getForEntity(orUri, String.class);
+                    if (orRes.getStatusCode().is2xxSuccessful() && orRes.getBody() != null) {
+                        GoogleBooksModel2.GoogleVolumesResponse2 orConverted = parseOpenLibraryResponse(orRes.getBody(), safeMaxResults);
+                        if (orConverted != null && orConverted.getItems() != null && !orConverted.getItems().isEmpty()) {
+                            return orConverted;
+                        }
+                    }
+                }
+
+                // Kết nối Internet thành công nhưng từ khóa không có sách hoặc đã tới trang cuối
+                return GoogleBooksModel2.GoogleVolumesResponse2.builder()
+                        .kind("books#volumes")
+                        .totalItems(0)
+                        .items(List.of())
+                        .build();
             }
         } catch (Exception ex) {
             log.warn("Không thể kết nối OpenLibrary ({}) - Kích hoạt cơ chế Offline Mock dự phòng.", ex.getMessage());
         }
 
         // 3. Fallback an toàn khi mất mạng hoặc không thể truy cập internet
-        return buildOfflineMockResponse(searchQuery, safeMaxResults);
+        return buildOfflineMockResponse(searchQuery, safePage, safeMaxResults);
     }
 
     /**
@@ -168,9 +206,13 @@ public class GoogleBooksRestClient2 {
                         .build());
             }
 
+            int total = (root.has("numFound") && root.get("numFound").isInt())
+                    ? root.get("numFound").asInt()
+                    : items.size();
+
             return GoogleBooksModel2.GoogleVolumesResponse2.builder()
                     .kind("books#volumes")
-                    .totalItems(items.size())
+                    .totalItems(total)
                     .items(items)
                     .build();
         } catch (Exception e) {
@@ -179,10 +221,14 @@ public class GoogleBooksRestClient2 {
         }
     }
 
-    /**
-     * Dữ liệu mô phỏng dự phòng đa dạng khi hoàn toàn mất mạng (Offline Fallback).
-     */
     private GoogleBooksModel2.GoogleVolumesResponse2 buildOfflineMockResponse(String query, int limit) {
+        return buildOfflineMockResponse(query, 1, limit);
+    }
+
+    /**
+     * Dữ liệu mô phỏng dự phòng đa dạng khi hoàn toàn mất mạng (Offline Fallback có phân trang).
+     */
+    private GoogleBooksModel2.GoogleVolumesResponse2 buildOfflineMockResponse(String query, int page, int limit) {
         List<GoogleBooksModel2.GoogleVolumeItem2> allCatalog = new ArrayList<>();
 
         // --- NHÓM SÁCH JAVA ---
@@ -249,17 +295,22 @@ public class GoogleBooksRestClient2 {
                     boolean descMatch = info.getDescription() != null && info.getDescription().toLowerCase(Locale.ROOT).contains(lowerQuery);
                     return titleMatch || authorMatch || categoryMatch || descMatch;
                 })
-                .limit(limit)
                 .toList();
 
         if (filtered.isEmpty()) {
-            filtered = allCatalog.stream().limit(limit).toList();
+            filtered = allCatalog;
         }
+
+        int fromIndex = Math.min((page - 1) * limit, filtered.size());
+        int toIndex = Math.min(fromIndex + limit, filtered.size());
+        List<GoogleBooksModel2.GoogleVolumeItem2> pagedItems = (fromIndex < toIndex)
+                ? filtered.subList(fromIndex, toIndex)
+                : List.of();
 
         return GoogleBooksModel2.GoogleVolumesResponse2.builder()
                 .kind("books#volumes")
                 .totalItems(filtered.size())
-                .items(filtered)
+                .items(pagedItems)
                 .build();
     }
 

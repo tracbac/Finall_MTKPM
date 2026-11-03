@@ -10,9 +10,16 @@ import java.util.Optional;
 public interface ExternalBookCatalogPort2 {
 
     /**
-     * Tra cứu danh sách sách từ nguồn ngoài theo từ khóa.
+     * Tra cứu danh sách sách từ nguồn ngoài theo từ khóa (trang mặc định là 1).
      */
     List<ExternalBookDto2> searchBooks(String query, int maxResults);
+
+    /**
+     * Tra cứu danh sách sách từ nguồn ngoài theo từ khóa có hỗ trợ phân trang.
+     */
+    default List<ExternalBookDto2> searchBooks(String query, int page, int maxResults) {
+        return searchBooks(query, maxResults);
+    }
 
     /**
      * Tra cứu chi tiết một cuốn sách từ nguồn ngoài theo mã định danh chuẩn quốc tế ISBN.
