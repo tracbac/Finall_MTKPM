@@ -66,8 +66,15 @@ public class GoogleBooksRestClient2 {
 
         // 1. Thử gọi Google Books API thật
         try {
+            String googleQuery = searchQuery;
+            if (googleQuery.toLowerCase(Locale.ROOT).startsWith("title:")) {
+                googleQuery = "intitle:" + googleQuery.substring("title:".length()).trim();
+            } else if (googleQuery.toLowerCase(Locale.ROOT).startsWith("author:")) {
+                googleQuery = "inauthor:" + googleQuery.substring("author:".length()).trim();
+            }
+
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(GOOGLE_BOOKS_API_URL)
-                    .queryParam("q", searchQuery)
+                    .queryParam("q", googleQuery)
                     .queryParam("startIndex", startIndex)
                     .queryParam("maxResults", safeMaxResults);
 
@@ -93,14 +100,7 @@ public class GoogleBooksRestClient2 {
 
         // 2. Thử gọi OpenLibrary API trực tuyến thật (hoàn toàn miễn phí, hỗ trợ phân trang chuẩn xác)
         try {
-            URI openLibUri = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
-                    .queryParam("q", searchQuery)
-                    .queryParam("fields", "key,title,author_name,publisher,first_publish_year,number_of_pages_median,isbn,cover_i,subject")
-                    .queryParam("page", safePage)
-                    .queryParam("limit", safeMaxResults)
-                    .build()
-                    .encode()
-                    .toUri();
+            URI openLibUri = buildOpenLibraryUri(searchQuery, safePage, safeMaxResults);
 
             log.info("Kết nối OpenLibrary API: {}", openLibUri);
             ResponseEntity<String> openLibRes = restTemplate.getForEntity(openLibUri, String.class);
@@ -112,16 +112,9 @@ public class GoogleBooksRestClient2 {
                 }
 
                 // Nếu tìm chính xác bị 0 kết quả (do gõ nhầm chính tả như 'clean achitecture'), tự động nới lỏng tìm kiếm bằng OR
-                if (searchQuery.contains(" ")) {
+                if (searchQuery.contains(" ") && !searchQuery.contains(":")) {
                     String orQuery = searchQuery.replaceAll("\\s+", " OR ");
-                    URI orUri = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
-                            .queryParam("q", orQuery)
-                            .queryParam("fields", "key,title,author_name,publisher,first_publish_year,number_of_pages_median,isbn,cover_i,subject")
-                            .queryParam("page", safePage)
-                            .queryParam("limit", safeMaxResults)
-                            .build()
-                            .encode()
-                            .toUri();
+                    URI orUri = buildOpenLibraryUri(orQuery, safePage, safeMaxResults);
                     log.info("Thử tìm kiếm nới lỏng lỗi chính tả trên OpenLibrary: {}", orUri);
                     ResponseEntity<String> orRes = restTemplate.getForEntity(orUri, String.class);
                     if (orRes.getStatusCode().is2xxSuccessful() && orRes.getBody() != null) {
@@ -145,6 +138,35 @@ public class GoogleBooksRestClient2 {
 
         // 3. Fallback an toàn khi mất mạng hoặc không thể truy cập internet
         return buildOfflineMockResponse(searchQuery, safePage, safeMaxResults);
+    }
+
+    /**
+     * Xây dựng URI truy vấn OpenLibrary hỗ trợ tìm theo trường (title, author, subject, isbn) hoặc từ khóa tự do.
+     */
+    private URI buildOpenLibraryUri(String query, int page, int maxResults) {
+        UriComponentsBuilder openLibBuilder = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
+                .queryParam("fields", "key,title,author_name,publisher,first_publish_year,number_of_pages_median,isbn,cover_i,subject")
+                .queryParam("page", page)
+                .queryParam("limit", maxResults);
+
+        String lowerQ = (query != null) ? query.toLowerCase(Locale.ROOT).trim() : "";
+        if (lowerQ.startsWith("intitle:")) {
+            openLibBuilder.queryParam("title", query.substring("intitle:".length()).trim());
+        } else if (lowerQ.startsWith("title:")) {
+            openLibBuilder.queryParam("title", query.substring("title:".length()).trim());
+        } else if (lowerQ.startsWith("inauthor:")) {
+            openLibBuilder.queryParam("author", query.substring("inauthor:".length()).trim());
+        } else if (lowerQ.startsWith("author:")) {
+            openLibBuilder.queryParam("author", query.substring("author:".length()).trim());
+        } else if (lowerQ.startsWith("subject:")) {
+            openLibBuilder.queryParam("subject", query.substring("subject:".length()).trim());
+        } else if (lowerQ.startsWith("isbn:")) {
+            openLibBuilder.queryParam("isbn", query.substring("isbn:".length()).trim());
+        } else {
+            openLibBuilder.queryParam("q", query);
+        }
+
+        return openLibBuilder.build().encode().toUri();
     }
 
     /**
@@ -398,17 +420,45 @@ public class GoogleBooksRestClient2 {
                 "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300",
                 "Kiến trúc lựa chọn và kinh tế học hành vi giúp con người đưa ra quyết định tốt hơn về sức khỏe, tài chính và cuộc sống."));
 
-        // Lọc theo từ khóa
-        String lowerQuery = query.toLowerCase(Locale.ROOT);
+        // Lọc theo từ khóa và trường chỉ định (hỗ trợ intitle:, inauthor:, subject:, isbn:)
+        String lowerQuery = (query != null) ? query.toLowerCase(Locale.ROOT).trim() : "";
+        String targetScope = "ALL";
+        String cleanQuery = lowerQuery;
+
+        if (cleanQuery.startsWith("intitle:") || cleanQuery.startsWith("title:")) {
+            targetScope = "TITLE";
+            cleanQuery = cleanQuery.replaceFirst("^(intitle:|title:)", "").trim();
+        } else if (cleanQuery.startsWith("inauthor:") || cleanQuery.startsWith("author:")) {
+            targetScope = "AUTHOR";
+            cleanQuery = cleanQuery.replaceFirst("^(inauthor:|author:)", "").trim();
+        } else if (cleanQuery.startsWith("subject:")) {
+            targetScope = "CATEGORY";
+            cleanQuery = cleanQuery.replaceFirst("^subject:", "").trim();
+        } else if (cleanQuery.startsWith("isbn:")) {
+            targetScope = "ISBN";
+            cleanQuery = cleanQuery.replaceFirst("^isbn:", "").trim();
+        }
+
+        final String finalScope = targetScope;
+        final String finalKeyword = cleanQuery;
+
         List<GoogleBooksModel2.GoogleVolumeItem2> filtered = allCatalog.stream()
                 .filter(item -> {
                     GoogleBooksModel2.VolumeInfo info = item.getVolumeInfo();
                     if (info == null) return false;
-                    boolean titleMatch = info.getTitle() != null && info.getTitle().toLowerCase(Locale.ROOT).contains(lowerQuery);
-                    boolean authorMatch = info.getAuthors() != null && info.getAuthors().stream().anyMatch(a -> a.toLowerCase(Locale.ROOT).contains(lowerQuery));
-                    boolean categoryMatch = info.getCategories() != null && info.getCategories().stream().anyMatch(c -> c.toLowerCase(Locale.ROOT).contains(lowerQuery));
-                    boolean descMatch = info.getDescription() != null && info.getDescription().toLowerCase(Locale.ROOT).contains(lowerQuery);
-                    return titleMatch || authorMatch || categoryMatch || descMatch;
+                    boolean titleMatch = info.getTitle() != null && info.getTitle().toLowerCase(Locale.ROOT).contains(finalKeyword);
+                    boolean authorMatch = info.getAuthors() != null && info.getAuthors().stream().anyMatch(a -> a.toLowerCase(Locale.ROOT).contains(finalKeyword));
+                    boolean categoryMatch = info.getCategories() != null && info.getCategories().stream().anyMatch(c -> c.toLowerCase(Locale.ROOT).contains(finalKeyword));
+                    boolean descMatch = info.getDescription() != null && info.getDescription().toLowerCase(Locale.ROOT).contains(finalKeyword);
+                    boolean isbnMatch = info.getIndustryIdentifiers() != null && info.getIndustryIdentifiers().stream().anyMatch(id -> id.getIdentifier() != null && id.getIdentifier().contains(finalKeyword));
+
+                    return switch (finalScope) {
+                        case "TITLE" -> titleMatch;
+                        case "AUTHOR" -> authorMatch;
+                        case "CATEGORY" -> categoryMatch;
+                        case "ISBN" -> isbnMatch;
+                        default -> titleMatch || authorMatch || categoryMatch || descMatch || isbnMatch;
+                    };
                 })
                 .toList();
 
