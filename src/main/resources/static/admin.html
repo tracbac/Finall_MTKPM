@@ -540,64 +540,64 @@
                     select.replaceChildren(new Option("Không tải được danh sách thành viên", ""));
                     showInlineNotice("notification-notice", error.message, "error");
                 }
+            }
 
-                async function loadAccounts() {
-                    const body = document.getElementById("accounts-table");
-                    const count = document.getElementById("account-list-count");
-                    body.innerHTML = '<tr><td colspan="4" class="loading">Đang tải tài khoản...</td></tr>';
-                    count.textContent = "Đang tải tài khoản...";
-                    try {
-                        const data = await api("/api/admin/users");
-                        if (!Array.isArray(data)) throw new Error("Danh sách tài khoản không đúng định dạng.");
-                        accounts = data;
-                        renderAccounts();
-                    } catch (error) {
-                        accounts = [];
-                        count.textContent = "Không tải được danh sách";
-                        body.replaceChildren();
-                        const row = document.createElement("tr");
-                        row.append(makeElement("td", "error-state", error.message));
-                        row.firstElementChild.colSpan = 4;
-                        body.append(row);
-                    }
-                }
-
-                function renderAccounts() {
-                    const body = document.getElementById("accounts-table");
-                    const query = document.getElementById("account-search").value.trim().toLocaleLowerCase("vi");
-                    const selectedRole = document.getElementById("account-role-filter").value;
-                    const filteredAccounts = accounts.filter(account => {
-                        const matchesSearch = `${account.username || ""} ${account.email || ""}`
-                            .toLocaleLowerCase("vi").includes(query);
-                        const matchesRole = !selectedRole
-                            || String(account.role || "").toUpperCase() === selectedRole;
-                        return matchesSearch && matchesRole;
-                    });
-
-                    document.getElementById("account-list-count").textContent = query || selectedRole
-                        ? `Hiển thị ${filteredAccounts.length} / ${accounts.length} tài khoản`
-                        : `${accounts.length} tài khoản`;
+            async function loadAccounts() {
+                const body = document.getElementById("accounts-table");
+                const count = document.getElementById("account-list-count");
+                body.innerHTML = '<tr><td colspan="4" class="loading">Đang tải tài khoản...</td></tr>';
+                count.textContent = "Đang tải tài khoản...";
+                try {
+                    const data = await api("/api/admin/users");
+                    if (!Array.isArray(data)) throw new Error("Danh sách tài khoản không đúng định dạng.");
+                    accounts = data;
+                    renderAccounts();
+                } catch (error) {
+                    accounts = [];
+                    count.textContent = "Không tải được danh sách";
                     body.replaceChildren();
-                    if (!filteredAccounts.length) {
-                        body.innerHTML = `<tr><td colspan="4" class="empty">${
-                            accounts.length ? "Không tìm thấy tài khoản phù hợp." : "Chưa có tài khoản nào."
-                        }</td></tr>`;
-                        return;
-                    }
-
-                    filteredAccounts.forEach(account => {
-                        const roleValue = String(account.role || "").toUpperCase();
-                        const roleLabel = roleValue === "ADMIN" ? "Quản trị viên"
-                            : roleValue === "USER" ? "Thành viên" : (account.role || "Chưa xác định");
-                        const row = document.createElement("tr");
-                        row.append(
-                            makeElement("td", "", account.id ?? "—"),
-                            makeElement("td", "", account.username || "—"),
-                            makeElement("td", "", account.email || "—"),
-                            makeElement("td", "", roleLabel));
-                        body.append(row);
-                    });
+                    const row = document.createElement("tr");
+                    row.append(makeElement("td", "error-state", error.message));
+                    row.firstElementChild.colSpan = 4;
+                    body.append(row);
                 }
+            }
+
+            function renderAccounts() {
+                const body = document.getElementById("accounts-table");
+                const query = document.getElementById("account-search").value.trim().toLocaleLowerCase("vi");
+                const selectedRole = document.getElementById("account-role-filter").value;
+                const filteredAccounts = accounts.filter(account => {
+                    const matchesSearch = `${account.username || ""} ${account.email || ""}`
+                        .toLocaleLowerCase("vi").includes(query);
+                    const matchesRole = !selectedRole
+                        || String(account.role || "").toUpperCase() === selectedRole;
+                    return matchesSearch && matchesRole;
+                });
+
+                document.getElementById("account-list-count").textContent = query || selectedRole
+                    ? `Hiển thị ${filteredAccounts.length} / ${accounts.length} tài khoản`
+                    : `${accounts.length} tài khoản`;
+                body.replaceChildren();
+                if (!filteredAccounts.length) {
+                    body.innerHTML = `<tr><td colspan="4" class="empty">${
+                        accounts.length ? "Không tìm thấy tài khoản phù hợp." : "Chưa có tài khoản nào."
+                    }</td></tr>`;
+                    return;
+                }
+
+                filteredAccounts.forEach(account => {
+                    const roleValue = String(account.role || "").toUpperCase();
+                    const roleLabel = roleValue === "ADMIN" ? "Quản trị viên"
+                        : roleValue === "USER" ? "Thành viên" : (account.role || "Chưa xác định");
+                    const row = document.createElement("tr");
+                    row.append(
+                        makeElement("td", "", account.id ?? "—"),
+                        makeElement("td", "", account.username || "—"),
+                        makeElement("td", "", account.email || "—"),
+                        makeElement("td", "", roleLabel));
+                    body.append(row);
+                });
             }
 
             async function loadAdminNotifications() {
