@@ -8,6 +8,7 @@ import com.library.digital_library.model.Book;
 import com.library.digital_library.model.User;
 import com.library.digital_library.model.model3.*;
 import com.library.digital_library.repository.repository3.DownloadLog3Repository;
+import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.service.service3.DrmLicenseService3;
 import com.library.digital_library.service.service3.EBookDownloadService3;
 import com.library.digital_library.service.service3.LoanService3;
@@ -21,11 +22,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -50,6 +54,9 @@ class Controller3Test {
 
     @Mock
     private DownloadLog3Repository downloadLogRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private LoanController3 loanController;
@@ -122,26 +129,37 @@ class Controller3Test {
     @DisplayName("API POST /api/v3/ebooks/download: Trả về HTTP 200 OK khi Proxy cấp quyền tải thành công")
     void testApiDownloadEBook_Allowed() throws Exception {
         DownloadRequest3 request = new DownloadRequest3();
-        request.setUserId(1L);
+        request.setUserId(999L);
         request.setBookId(2L);
         request.setLicenseKey("DRM-KEY-OK");
+        User authenticatedUser = new User();
+        authenticatedUser.setId(1L);
+        authenticatedUser.setUsername("alice");
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(authenticatedUser));
 
         DownloadResult3 result = DownloadResult3.builder()
                 .success(true)
                 .fileName("book.pdf")
-                .downloadUrl("/api/v3/ebooks/stream/token")
+                .fileContent("%PDF-1.7".getBytes())
                 .remainingDownloads(2)
                 .build();
 
         when(eBookDownloadService.downloadEBook(any(DownloadRequest3.class))).thenReturn(result);
 
         mockMvcEbooks.perform(post("/api/v3/ebooks/download")
+                        .principal(() -> "alice")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.fileName").value("book.pdf"))
-                .andExpect(jsonPath("$.remainingDownloads").value(2));
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .bytes("%PDF-1.7".getBytes()))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Content-Type", "application/pdf"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("X-Remaining-Downloads", "2"));
+        ArgumentCaptor<DownloadRequest3> requestCaptor = ArgumentCaptor.forClass(DownloadRequest3.class);
+        verify(eBookDownloadService).downloadEBook(requestCaptor.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(1L, requestCaptor.getValue().getUserId());
     }
 
     @Test
@@ -151,11 +169,16 @@ class Controller3Test {
         request.setUserId(1L);
         request.setBookId(2L);
         request.setLicenseKey("DRM-KEY-BAD");
+        User authenticatedUser = new User();
+        authenticatedUser.setId(1L);
+        authenticatedUser.setUsername("alice");
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(authenticatedUser));
 
         when(eBookDownloadService.downloadEBook(any(DownloadRequest3.class)))
                 .thenThrow(new SecurityException("[Proxy từ chối] Bạn đang nợ phạt quá hạn!"));
 
         mockMvcEbooks.perform(post("/api/v3/ebooks/download")
+                        .principal(() -> "alice")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())

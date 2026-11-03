@@ -1,6 +1,7 @@
 package com.library.digital_library.config;
 
 import com.library.digital_library.service.BookCoverStorageException;
+import com.library.digital_library.service.EBookStorageException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -50,6 +51,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(BookCoverStorageException.class)
     public ResponseEntity<Map<String, String>> handleStorageFailure(BookCoverStorageException exception) {
+        return error(HttpStatus.BAD_GATEWAY, exception.getMessage());
+    }
+
+    @ExceptionHandler(EBookStorageException.class)
+    public ResponseEntity<Map<String, String>> handleEBookStorageFailure(EBookStorageException exception) {
         return error(HttpStatus.BAD_GATEWAY, exception.getMessage());
     }
 

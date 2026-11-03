@@ -97,6 +97,10 @@
         .book-cell strong { display: block; max-width: 240px; overflow: hidden; color: var(--ink); text-overflow: ellipsis; }
         .book-cell small { display: block; margin-top: 4px; color: var(--muted); }
         .actions-cell { display: flex; gap: 6px; }
+        .ebook-approval-controls { display: grid; grid-template-columns: repeat(2, minmax(78px, 1fr)); gap: 5px; min-width: 190px; }
+        .ebook-approval-controls label { display: grid; gap: 3px; color: var(--muted); font-size: 9px; }
+        .ebook-approval-controls input { width: 100%; min-width: 0; min-height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; }
+        .ebook-approval-controls .small-button { grid-column: 1 / -1; }
         .status { display: inline-flex; align-items: center; padding: 5px 8px; border-radius: 999px; background: #f0f1ed; color: #707b72; font-size: 9px; font-weight: 700; }
         .status.pending { background: #fbf1df; color: var(--amber); }
         .status.borrowed { background: #e9f0e9; color: var(--green); }
@@ -289,6 +293,11 @@
                         <article class="feature-card"><span class="feature-icon">DRM</span><h3>Bảo vệ nội dung</h3><p>Thu hồi quyền truy cập khi cần thiết.</p><span class="status borrowed">Đã kết nối API</span></article>
                     </div>
                     <section class="panel" style="margin-top:16px">
+                        <div class="panel-heading"><div><h2>Yêu cầu mượn E-Book</h2><p id="ebook-request-count">Đang tải yêu cầu...</p></div><button class="secondary-button" id="refresh-ebook-requests" type="button">Tải lại</button></div>
+                        <div class="notice" id="ebook-admin-notice" role="status" aria-live="polite" hidden></div>
+                        <div class="table-wrap"><table><thead><tr><th>Thành viên</th><th>Sách</th><th>Ngày gửi</th><th>Trạng thái</th><th>Phản hồi</th><th>Giấy phép</th><th>Thao tác</th></tr></thead><tbody id="ebook-requests-admin-table"><tr><td class="loading" colspan="7">Đang tải yêu cầu...</td></tr></tbody></table></div>
+                    </section>
+                    <section class="panel" style="margin-top:16px">
                         <div class="panel-heading"><div><h2>Cấp bản quyền DRM</h2><p>Chọn thành viên và đầu sách để tạo giấy phép.</p></div></div>
                         <div class="notice" id="drm-notice" role="status" aria-live="polite" hidden></div>
                         <form id="drm-form"><div class="form-grid">
@@ -388,6 +397,7 @@
             document.getElementById("book-form").addEventListener("submit", saveBook);
             document.getElementById("user-form").addEventListener("submit", createUser);
             document.getElementById("drm-form").addEventListener("submit", issueLicense);
+            document.getElementById("refresh-ebook-requests").addEventListener("click", loadEBookRequests);
             document.getElementById("loan3-form").addEventListener("submit", createLoan3);
             document.getElementById("drm-user").addEventListener("change", loadLicenses);
             document.getElementById("refresh-licenses-button").addEventListener("click", loadLicenses);
@@ -429,6 +439,7 @@
                 if (name === "ebooks") {
                     populateBookOptions();
                     loadDrmUsers();
+                    loadEBookRequests();
                 }
                 if (name === "integrations") {
                     const input = document.getElementById("google-search-input");
@@ -707,6 +718,112 @@
                 }
             }
 
+            async function loadEBookRequests() {
+                const body = document.getElementById("ebook-requests-admin-table");
+                body.innerHTML = '<tr><td class="loading" colspan="7">Đang tải yêu cầu...</td></tr>';
+                try {
+                    const requests = await api("/api/admin/ebooks/requests");
+                    if (!Array.isArray(requests)) throw new Error("Danh sách yêu cầu E-Book không đúng định dạng.");
+                    document.getElementById("ebook-request-count").textContent =
+                        `${requests.filter(request => request.status === "PENDING").length} chờ duyệt / ${requests.length} tổng`;
+                    body.replaceChildren();
+                    if (!requests.length) {
+                        body.innerHTML = '<tr><td class="empty" colspan="7">Chưa có yêu cầu mượn E-Book.</td></tr>';
+                        return;
+                    }
+                    requests.forEach(request => {
+                        const row = document.createElement("tr");
+                        row.append(makeElement("td", "", request.username || "—"),
+                            makeElement("td", "", request.bookTitle || "—"),
+                            makeElement("td", "", formatDateTime(request.requestedAt)));
+                        const status = document.createElement("td");
+                        status.append(makeElement("span", `status ${String(request.status || "").toLowerCase()}`,
+                            eBookRequestStatusLabel(request.status)));
+                        row.append(status, makeElement("td", "", request.reviewNote || "—"),
+                            makeElement("td", "", request.licenseKey || "—"));
+                        const actions = makeElement("td", "actions-cell");
+                        if (request.status === "PENDING") {
+                            const approvalControls = makeElement("div", "ebook-approval-controls");
+                            const daysLabel = makeElement("label", "", "Hiệu lực (ngày)");
+                            const daysInput = document.createElement("input");
+                            daysInput.type = "number";
+                            daysInput.min = "1";
+                            daysInput.max = "3650";
+                            daysInput.required = true;
+                            daysInput.value = "30";
+                            daysInput.setAttribute("aria-label", `Số ngày hiệu lực cho yêu cầu ${request.id}`);
+                            daysLabel.append(daysInput);
+                            const downloadsLabel = makeElement("label", "", "Lượt tải");
+                            const downloadsInput = document.createElement("input");
+                            downloadsInput.type = "number";
+                            downloadsInput.min = "1";
+                            downloadsInput.max = "1000";
+                            downloadsInput.required = true;
+                            downloadsInput.value = "3";
+                            downloadsInput.setAttribute("aria-label", `Số lượt tải cho yêu cầu ${request.id}`);
+                            downloadsLabel.append(downloadsInput);
+                            const approve = makeElement("button", "small-button", "Duyệt & cấp DRM");
+                            approve.type = "button";
+                            approve.addEventListener("click", () => {
+                                if (!daysInput.reportValidity() || !downloadsInput.reportValidity()) return;
+                                reviewEBookRequest(request, "approve", approve, {
+                                    validDays: Number(daysInput.value),
+                                    maxDownloads: Number(downloadsInput.value)
+                                });
+                            });
+                            const reject = makeElement("button", "small-button danger", "Từ chối");
+                            reject.type = "button";
+                            reject.addEventListener("click", () => reviewEBookRequest(request, "reject", reject));
+                            approvalControls.append(daysLabel, downloadsLabel, approve, reject);
+                            actions.append(approvalControls);
+                        } else {
+                            actions.textContent = "—";
+                        }
+                        row.append(actions);
+                        body.append(row);
+                    });
+                } catch (error) {
+                    document.getElementById("ebook-request-count").textContent = "Không tải được yêu cầu";
+                    body.innerHTML = `<tr><td class="error-state" colspan="7">${escapeHtml(error.message)}</td></tr>`;
+                    showInlineNotice("ebook-admin-notice", error.message, "error");
+                }
+            }
+
+            async function reviewEBookRequest(request, decision, button, settings) {
+                const verb = decision === "approve" ? "duyệt và cấp DRM cho" : "từ chối";
+                if (!window.confirm(`Bạn có chắc muốn ${verb} yêu cầu E-Book "${request.bookTitle}" của ${request.username}?`)) return;
+                button.disabled = true;
+                try {
+                    await api(`/api/admin/ebooks/requests/${encodeURIComponent(request.id)}/${decision}`, {
+                        method: "POST",
+                        ...(decision === "reject" ? {
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ note: "Yêu cầu không được Admin phê duyệt." })
+                        } : {
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(settings)
+                        })
+                    });
+                    showInlineNotice("ebook-admin-notice",
+                        decision === "approve" ? "Đã duyệt yêu cầu và cấp giấy phép DRM." : "Đã từ chối yêu cầu E-Book.",
+                        "success");
+                    await Promise.all([loadEBookRequests(), loadDrmUsers()]);
+                } catch (error) {
+                    button.disabled = false;
+                    showInlineNotice("ebook-admin-notice", error.message, "error");
+                }
+            }
+
+            function eBookRequestStatusLabel(status) {
+                return ({ PENDING: "Chờ duyệt", APPROVED: "Đã duyệt", REJECTED: "Từ chối", CANCELED: "Đã hủy" })[status] || status || "Không rõ";
+            }
+
+            function formatDateTime(value) {
+                if (!value) return "—";
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("vi-VN");
+            }
+
             async function issueLicense(event) {
                 event.preventDefault();
                 const form = event.currentTarget;
@@ -773,13 +890,45 @@
                         makeElement("td", "", formatPrice(book.rentalPrice)),
                         makeElement("td", "", formatPrice(book.coverPrice)));
                     const actions = makeElement("td", "actions-cell");
+                    const upload = makeElement("button", "small-button", "PDF");
+                    upload.type = "button";
+                    upload.setAttribute("aria-label", `Tải PDF cho sách ${book.title || book.id}`);
+                    const fileInput = document.createElement("input");
+                    fileInput.type = "file";
+                    fileInput.accept = "application/pdf,.pdf";
+                    fileInput.hidden = true;
+                    fileInput.addEventListener("change", async () => {
+                        const file = fileInput.files?.[0];
+                        if (!file) return;
+                        if (file.size > 50 * 1024 * 1024) {
+                            showNotice("PDF không được vượt quá 50 MB.", "error");
+                            fileInput.value = "";
+                            return;
+                        }
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        upload.disabled = true;
+                        try {
+                            const saved = await api(`/api/admin/ebooks/${encodeURIComponent(book.id)}/file`, {
+                                method: "POST",
+                                body: formData
+                            });
+                            showNotice(`Đã lưu PDF "${saved.fileName}" cho sách "${book.title}".`, "success");
+                        } catch (error) {
+                            showNotice(error.message, "error");
+                        } finally {
+                            upload.disabled = false;
+                            fileInput.value = "";
+                        }
+                    });
+                    upload.addEventListener("click", () => fileInput.click());
                     const edit = makeElement("button", "small-button", "Sửa");
                     edit.type = "button";
                     edit.addEventListener("click", () => openBookForm(book));
                     const remove = makeElement("button", "small-button danger", "Xóa");
                     remove.type = "button";
                     remove.addEventListener("click", () => deleteBook(book));
-                    actions.append(edit, remove);
+                    actions.append(upload, fileInput, edit, remove);
                     row.append(actions);
                     body.append(row);
                 });

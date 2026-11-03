@@ -93,7 +93,8 @@ class ProxyPattern3Test {
         when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
         when(fineReceiptRepository.countByUserIdAndIsPaidFalse(1L)).thenReturn(0L);
         when(loanRecordRepository.countByUserIdAndStatus(1L, LoanStatus3.OVERDUE)).thenReturn(0L);
-        when(drmLicenseRepository.findByLicenseKey("DRM-VALID-KEY-12345")).thenReturn(Optional.of(validLicense));
+        when(drmLicenseRepository.findByLicenseKeyForUpdate("DRM-VALID-KEY-12345"))
+                .thenReturn(Optional.of(validLicense));
 
         // Giả lập Real Subject xử lý tải thành công
         DownloadResult3 realResult = DownloadResult3.builder()
@@ -101,7 +102,7 @@ class ProxyPattern3Test {
                 .fileName("Design_Patterns_protected.pdf")
                 .fileFormat("PDF")
                 .fileSize(5242880L)
-                .downloadUrl("/api/v3/ebooks/stream/token-abc")
+                .fileContent("%PDF-1.7".getBytes())
                 .build();
         when(realService.downloadEBook(validRequest)).thenReturn(realResult);
 
@@ -157,7 +158,7 @@ class ProxyPattern3Test {
         when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
         when(fineReceiptRepository.countByUserIdAndIsPaidFalse(1L)).thenReturn(0L);
         when(loanRecordRepository.countByUserIdAndStatus(1L, LoanStatus3.OVERDUE)).thenReturn(0L);
-        when(drmLicenseRepository.findByLicenseKey("DRM-VALID-KEY-12345")).thenReturn(Optional.empty());
+        when(drmLicenseRepository.findByLicenseKeyForUpdate("DRM-VALID-KEY-12345")).thenReturn(Optional.empty());
 
         SecurityException ex = assertThrows(SecurityException.class, () -> downloadProxy.downloadEBook(validRequest));
 
@@ -174,7 +175,8 @@ class ProxyPattern3Test {
         when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
         when(fineReceiptRepository.countByUserIdAndIsPaidFalse(1L)).thenReturn(0L);
         when(loanRecordRepository.countByUserIdAndStatus(1L, LoanStatus3.OVERDUE)).thenReturn(0L);
-        when(drmLicenseRepository.findByLicenseKey("DRM-VALID-KEY-12345")).thenReturn(Optional.of(validLicense));
+        when(drmLicenseRepository.findByLicenseKeyForUpdate("DRM-VALID-KEY-12345"))
+                .thenReturn(Optional.of(validLicense));
 
         SecurityException ex = assertThrows(SecurityException.class, () -> downloadProxy.downloadEBook(validRequest));
 
@@ -192,11 +194,12 @@ class ProxyPattern3Test {
         when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
         when(fineReceiptRepository.countByUserIdAndIsPaidFalse(1L)).thenReturn(0L);
         when(loanRecordRepository.countByUserIdAndStatus(1L, LoanStatus3.OVERDUE)).thenReturn(0L);
-        when(drmLicenseRepository.findByLicenseKey("DRM-VALID-KEY-12345")).thenReturn(Optional.of(validLicense));
+        when(drmLicenseRepository.findByLicenseKeyForUpdate("DRM-VALID-KEY-12345"))
+                .thenReturn(Optional.of(validLicense));
 
         SecurityException ex = assertThrows(SecurityException.class, () -> downloadProxy.downloadEBook(validRequest));
 
-        assertTrue(ex.getMessage().contains("thu hồi"));
+        assertTrue(ex.getMessage().contains("không còn hiệu lực"));
         verify(realService, never()).downloadEBook(any());
         verify(downloadLogRepository, times(1)).save(argThat(log -> "DENIED".equals(log.getStatus())));
     }
@@ -210,7 +213,8 @@ class ProxyPattern3Test {
         when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
         when(fineReceiptRepository.countByUserIdAndIsPaidFalse(1L)).thenReturn(0L);
         when(loanRecordRepository.countByUserIdAndStatus(1L, LoanStatus3.OVERDUE)).thenReturn(0L);
-        when(drmLicenseRepository.findByLicenseKey("DRM-VALID-KEY-12345")).thenReturn(Optional.of(validLicense));
+        when(drmLicenseRepository.findByLicenseKeyForUpdate("DRM-VALID-KEY-12345"))
+                .thenReturn(Optional.of(validLicense));
 
         SecurityException ex = assertThrows(SecurityException.class, () -> downloadProxy.downloadEBook(validRequest));
 
