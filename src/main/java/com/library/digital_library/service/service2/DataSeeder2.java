@@ -48,3 +48,4 @@ public class DataSeeder2 implements CommandLineRunner {
         }
     }
 }
+
