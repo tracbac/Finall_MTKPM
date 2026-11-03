@@ -26,7 +26,7 @@ public class SupabaseBookCoverStorage implements BookCoverStorage {
             RestTemplateBuilder restTemplateBuilder,
             @Value("${supabase.url}") String supabaseUrl,
             @Value("${supabase.key}") String serviceKey,
-            @Value("${supabase.bucket:book_prices}") String bucketName) {
+            @Value("${supabase.bucket:book-prices}") String bucketName) {
         this.restTemplate = restTemplateBuilder.build();
         this.supabaseUrl = supabaseUrl;
         this.serviceKey = serviceKey;
@@ -62,8 +62,14 @@ public class SupabaseBookCoverStorage implements BookCoverStorage {
         try {
             restTemplate.postForEntity(uploadUri, new HttpEntity<>(file.getBytes(), headers), String.class);
         } catch (RestClientResponseException exception) {
+            String responseBody = exception.getResponseBodyAsString().trim();
+            if (responseBody.length() > 400) {
+                responseBody = responseBody.substring(0, 400);
+            }
+            String detail = responseBody.isEmpty() ? "" : ": " + responseBody;
             throw new BookCoverStorageException(
-                    "Supabase rejected cover upload with HTTP " + exception.getStatusCode().value(),
+                    "Supabase rejected cover upload with HTTP "
+                            + exception.getStatusCode().value() + detail,
                     exception);
         } catch (java.io.IOException exception) {
             throw new BookCoverStorageException("Could not read the cover image", exception);
