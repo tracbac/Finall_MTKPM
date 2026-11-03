@@ -267,11 +267,12 @@
                             </div><div class="form-actions"><button class="primary-button" id="user-submit" type="submit">Tạo tài khoản</button></div></form>
                             <p class="hint">Chỉ quản trị viên đã đăng nhập mới có thể cấp vai trò quản trị.</p>
                         </section>
-                        <section class="panel"><div class="panel-heading"><div><h2>Danh sách tài khoản</h2><p>Tra cứu và quản lý thành viên.</p></div><span class="unavailable-badge">Chưa khả dụng</span></div>
-                            <div class="unavailable"><strong>Giao diện quản lý thành viên</strong><p>Khung tìm kiếm, lọc vai trò và trạng thái tài khoản để sẵn; chưa kết nối dữ liệu vì backend chưa có API liệt kê, cập nhật hoặc khóa tài khoản.</p>
-                                <div class="unavailable-controls"><input type="search" placeholder="Tìm tên hoặc email" disabled aria-label="Tìm tài khoản chưa khả dụng"><select disabled aria-label="Lọc vai trò chưa khả dụng"><option>Tất cả vai trò</option></select><button type="button" disabled>Tìm</button></div>
+                        <section class="panel"><div class="panel-heading"><div><h2>Danh sách tài khoản</h2><p id="account-list-count">Đang tải tài khoản...</p></div><button class="secondary-button" id="refresh-accounts" type="button">Tải lại</button></div>
+                            <div class="form-grid" style="margin-bottom:16px">
+                                <div class="field"><label for="account-search">Tìm tài khoản</label><input id="account-search" type="search" placeholder="Tên đăng nhập hoặc email" autocomplete="off"></div>
+                                <div class="field"><label for="account-role-filter">Lọc theo vai trò</label><select id="account-role-filter"><option value="">Tất cả vai trò</option><option value="USER">Thành viên</option><option value="ADMIN">Quản trị viên</option></select></div>
                             </div>
-                            <div class="table-wrap unavailable-table"><table><thead><tr><th>Tài khoản</th><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody><tr><td colspan="5" class="empty">Danh sách tài khoản — Chưa khả dụng</td></tr></tbody></table></div>
+                            <div class="table-wrap"><table><thead><tr><th>Mã</th><th>Tên đăng nhập</th><th>Email</th><th>Vai trò</th></tr></thead><tbody id="accounts-table"><tr><td colspan="4" class="loading">Đang tải tài khoản...</td></tr></tbody></table></div>
                         </section>
                     </div>
                 </section>
@@ -404,6 +405,7 @@
             const globalNotice = document.getElementById("global-notice");
             let books = [];
             let borrows = [];
+            let accounts = [];
             let loans3 = [];
             let drmUsers = [];
             let notificationUsers = [];
@@ -420,6 +422,9 @@
             document.getElementById("borrow-filter").addEventListener("change", renderBorrows);
             document.getElementById("book-form").addEventListener("submit", saveBook);
             document.getElementById("user-form").addEventListener("submit", createUser);
+            document.getElementById("account-search").addEventListener("input", renderAccounts);
+            document.getElementById("account-role-filter").addEventListener("change", renderAccounts);
+            document.getElementById("refresh-accounts").addEventListener("click", loadAccounts);
             document.getElementById("drm-form").addEventListener("submit", issueLicense);
             document.getElementById("refresh-ebook-requests").addEventListener("click", loadEBookRequests);
             document.getElementById("loan3-form").addEventListener("submit", createLoan3);
@@ -457,6 +462,7 @@
                 document.getElementById("breadcrumb-current").textContent = labels[name];
                 globalNotice.hidden = true;
                 if (name === "books") loadBooks();
+                if (name === "users") loadAccounts();
                 if (name === "borrows") {
                     loadBorrows();
                     loadLoans3();
@@ -533,6 +539,64 @@
                 } catch (error) {
                     select.replaceChildren(new Option("Không tải được danh sách thành viên", ""));
                     showInlineNotice("notification-notice", error.message, "error");
+                }
+
+                async function loadAccounts() {
+                    const body = document.getElementById("accounts-table");
+                    const count = document.getElementById("account-list-count");
+                    body.innerHTML = '<tr><td colspan="4" class="loading">Đang tải tài khoản...</td></tr>';
+                    count.textContent = "Đang tải tài khoản...";
+                    try {
+                        const data = await api("/api/admin/users");
+                        if (!Array.isArray(data)) throw new Error("Danh sách tài khoản không đúng định dạng.");
+                        accounts = data;
+                        renderAccounts();
+                    } catch (error) {
+                        accounts = [];
+                        count.textContent = "Không tải được danh sách";
+                        body.replaceChildren();
+                        const row = document.createElement("tr");
+                        row.append(makeElement("td", "error-state", error.message));
+                        row.firstElementChild.colSpan = 4;
+                        body.append(row);
+                    }
+                }
+
+                function renderAccounts() {
+                    const body = document.getElementById("accounts-table");
+                    const query = document.getElementById("account-search").value.trim().toLocaleLowerCase("vi");
+                    const selectedRole = document.getElementById("account-role-filter").value;
+                    const filteredAccounts = accounts.filter(account => {
+                        const matchesSearch = `${account.username || ""} ${account.email || ""}`
+                            .toLocaleLowerCase("vi").includes(query);
+                        const matchesRole = !selectedRole
+                            || String(account.role || "").toUpperCase() === selectedRole;
+                        return matchesSearch && matchesRole;
+                    });
+
+                    document.getElementById("account-list-count").textContent = query || selectedRole
+                        ? `Hiển thị ${filteredAccounts.length} / ${accounts.length} tài khoản`
+                        : `${accounts.length} tài khoản`;
+                    body.replaceChildren();
+                    if (!filteredAccounts.length) {
+                        body.innerHTML = `<tr><td colspan="4" class="empty">${
+                            accounts.length ? "Không tìm thấy tài khoản phù hợp." : "Chưa có tài khoản nào."
+                        }</td></tr>`;
+                        return;
+                    }
+
+                    filteredAccounts.forEach(account => {
+                        const roleValue = String(account.role || "").toUpperCase();
+                        const roleLabel = roleValue === "ADMIN" ? "Quản trị viên"
+                            : roleValue === "USER" ? "Thành viên" : (account.role || "Chưa xác định");
+                        const row = document.createElement("tr");
+                        row.append(
+                            makeElement("td", "", account.id ?? "—"),
+                            makeElement("td", "", account.username || "—"),
+                            makeElement("td", "", account.email || "—"),
+                            makeElement("td", "", roleLabel));
+                        body.append(row);
+                    });
                 }
             }
 
@@ -1181,6 +1245,7 @@
                     });
                     form.reset();
                     showInlineNotice("user-notice", `Đã tạo tài khoản ${user.username} với vai trò ${user.role === "ADMIN" ? "quản trị viên" : "thành viên"}.`, "success");
+                    await loadAccounts();
                 } catch (error) {
                     showInlineNotice("user-notice", error.message, "error");
                 } finally {
