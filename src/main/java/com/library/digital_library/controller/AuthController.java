@@ -16,6 +16,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -50,5 +51,11 @@ public class AuthController {
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> currentUser(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName()).orElseThrow();
+        return ResponseEntity.ok(UserResponse.from(user));
     }
 }

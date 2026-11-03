@@ -2,7 +2,9 @@ package com.library.digital_library.controller.controller3;
 
 import com.library.digital_library.model.model3.DrmLicense3;
 import com.library.digital_library.model.model3.IssueDrmRequest3;
+import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.service.service3.DrmLicenseService3;
+import java.security.Principal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.Map;
 public class DrmLicenseController3 {
 
     private final DrmLicenseService3 drmLicenseService;
+    private final UserRepository userRepository;
 
     /**
      * API 1: Cấp phép bản quyền số DRM cho User
@@ -41,6 +44,14 @@ public class DrmLicenseController3 {
      */
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<DrmLicense3>> getUserLicenses(@PathVariable Long userId) {
+        return ResponseEntity.ok(drmLicenseService.getUserLicenses(userId));
+    }
+
+    @GetMapping("/mine")
+    public ResponseEntity<List<DrmLicense3>> getMyLicenses(Principal principal) {
+        Long userId = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng đăng nhập."))
+                .getId();
         return ResponseEntity.ok(drmLicenseService.getUserLicenses(userId));
     }
 

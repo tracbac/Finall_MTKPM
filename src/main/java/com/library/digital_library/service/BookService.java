@@ -19,14 +19,17 @@ public class BookService {
     private final BookRepository bookRepository;
     private final BookPriceService bookPriceService;
     private final BookCoverStorage bookCoverStorage;
+    private final EBookFileService eBookFileService;
 
     public BookService(
             BookRepository bookRepository,
             BookPriceService bookPriceService,
-            BookCoverStorage bookCoverStorage) {
+            BookCoverStorage bookCoverStorage,
+            EBookFileService eBookFileService) {
         this.bookRepository = bookRepository;
         this.bookPriceService = bookPriceService;
         this.bookCoverStorage = bookCoverStorage;
+        this.eBookFileService = eBookFileService;
     }
 
     @Transactional(readOnly = true)
@@ -83,6 +86,7 @@ public class BookService {
         if (!bookRepository.existsById(id)) {
             throw new NoSuchElementException("Book not found");
         }
+        eBookFileService.deleteForBook(id);
         bookPriceService.deleteForBook(id);
         bookRepository.deleteById(id);
     }

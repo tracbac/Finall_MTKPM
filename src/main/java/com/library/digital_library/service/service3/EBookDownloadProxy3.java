@@ -81,7 +81,8 @@ public class EBookDownloadProxy3 implements EBookDownloadService3 {
             throw new SecurityException("[Proxy từ chối] Yêu cầu mã giấy phép bản quyền số DRM để tải tài liệu!");
         }
 
-        DrmLicense3 license = drmLicenseRepository.findByLicenseKey(request.getLicenseKey().trim()).orElse(null);
+        DrmLicense3 license = drmLicenseRepository.findByLicenseKeyForUpdate(request.getLicenseKey().trim())
+                .orElse(null);
         if (license == null) {
             logAudit(request, "DENIED", "Mã bản quyền số DRM không tồn tại");
             throw new SecurityException("[Proxy từ chối] Giấy phép bản quyền số không tồn tại hoặc không hợp lệ!");
@@ -94,9 +95,9 @@ public class EBookDownloadProxy3 implements EBookDownloadService3 {
         }
 
         // Kiểm tra trạng thái thu hồi (REVOKED)
-        if ("REVOKED".equalsIgnoreCase(license.getStatus())) {
-            logAudit(request, "DENIED", "Giấy phép bản quyền đã bị thu hồi");
-            throw new SecurityException("[Proxy từ chối] Giấy phép bản quyền số này đã bị thu hồi!");
+        if (!"ACTIVE".equalsIgnoreCase(license.getStatus())) {
+            logAudit(request, "DENIED", "Giấy phép bản quyền không còn hoạt động");
+            throw new SecurityException("[Proxy từ chối] Giấy phép bản quyền số này không còn hiệu lực!");
         }
 
         LocalDate today = LocalDate.now();

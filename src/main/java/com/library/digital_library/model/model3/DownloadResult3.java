@@ -1,5 +1,6 @@
 package com.library.digital_library.model.model3;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +18,8 @@ public class DownloadResult3 {
     private String fileName;
     private String fileFormat;       // PDF, EPUB
     private Long fileSize;           // Kích thước byte
-    private String downloadUrl;      // Đường dẫn tải bảo mật hoặc token stream
+    @JsonIgnore
+    private byte[] fileContent;
     private String drmWatermark;     // Thủy vân bản quyền số
     private Integer remainingDownloads; // Số lần tải còn lại
     private String message;
