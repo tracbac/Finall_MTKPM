@@ -27,10 +27,10 @@ class SupabaseBookCoverStorageTest {
                 new RestTemplateBuilder().additionalCustomizers(usedTemplate::set),
                 baseUrl,
                 "service-role-key",
-                "book-prices");
+                "book_prices");
         MockRestServiceServer server = MockRestServiceServer.bindTo(usedTemplate.get()).build();
         server.expect(requestTo(org.hamcrest.Matchers.startsWith(
-                        baseUrl + "/storage/v1/object/book-prices/")))
+                        baseUrl + "/storage/v1/object/book_prices/")))
                 .andExpect(method(HttpMethod.POST))
                 .andRespond(withStatus(HttpStatus.BAD_REQUEST)
                         .contentType(MediaType.APPLICATION_JSON)

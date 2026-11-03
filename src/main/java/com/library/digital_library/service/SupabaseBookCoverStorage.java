@@ -26,7 +26,7 @@ public class SupabaseBookCoverStorage implements BookCoverStorage {
             RestTemplateBuilder restTemplateBuilder,
             @Value("${supabase.url}") String supabaseUrl,
             @Value("${supabase.key}") String serviceKey,
-            @Value("${supabase.bucket:book-prices}") String bucketName) {
+            @Value("${supabase.bucket:book_prices}") String bucketName) {
         this.restTemplate = restTemplateBuilder.build();
         this.supabaseUrl = supabaseUrl;
         this.serviceKey = serviceKey;

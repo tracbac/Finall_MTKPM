@@ -18,6 +18,6 @@ key are not returned to the browser. Downloading is unavailable until an
 administrator uploads the book's PDF.
 
 Book-cover images use a different bucket, configured by
-`SUPABASE_STORAGE_BUCKET` (defaults to `book-prices`). Create that bucket as
+`SUPABASE_STORAGE_BUCKET` (defaults to `book_prices`). Create that bucket as
 public so the returned cover image URLs can be displayed. The configured
 bucket name must match the name in Supabase Storage exactly.
