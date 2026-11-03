@@ -76,7 +76,7 @@ public class GoogleBooksRestClient2 {
             }
 
             URI uri = builder.build().encode().toUri();
-            log.info("Gọi Google Books API: {}", uri);
+            log.info("Gọi Google Books API trang {} với tối đa {} kết quả", safePage, safeMaxResults);
 
             ResponseEntity<GoogleBooksModel2.GoogleVolumesResponse2> response =
                     restTemplate.getForEntity(uri, GoogleBooksModel2.GoogleVolumesResponse2.class);
