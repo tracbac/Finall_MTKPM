@@ -19,6 +19,7 @@ import com.library.digital_library.repository.repository3.DrmLicense3Repository;
 import com.library.digital_library.repository.repository3.EBookBorrowRequest3Repository;
 import com.library.digital_library.service.service3.DrmLicenseService3;
 import com.library.digital_library.service.service3.EBookBorrowRequest3Service;
+import com.library.digital_library.service.NotificationService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,9 @@ class EBookBorrowRequest3ServiceTest {
 
     @Mock
     private DrmLicenseService3 drmLicenseService;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private EBookBorrowRequest3Service requestService;
@@ -79,6 +83,10 @@ class EBookBorrowRequest3ServiceTest {
         assertEquals(book, request.getBook());
         assertEquals(EBookRequestStatus3.PENDING, request.getStatus());
         verify(requestRepository).save(any(EBookBorrowRequest3.class));
+        verify(notificationService).notifyUser(7L,
+                "Yêu cầu mượn E-Book \"Digital Book\" đã được gửi và đang chờ duyệt.");
+        verify(notificationService).notifyRole("ADMIN",
+                "Có yêu cầu mượn E-Book \"Digital Book\" mới từ reader.");
     }
 
     @Test
@@ -111,6 +119,8 @@ class EBookBorrowRequest3ServiceTest {
         assertEquals(EBookRequestStatus3.APPROVED, approved.getStatus());
         assertEquals("DRM-ISSUED", approved.getLicenseKey());
         assertEquals("Đã duyệt: hiệu lực 45 ngày, tối đa 6 lượt tải.", approved.getReviewNote());
+        verify(notificationService).notifyUser(7L,
+                "Yêu cầu E-Book \"Digital Book\" đã được duyệt và giấy phép DRM đã được cấp.");
         verify(drmLicenseService).issueLicense(argThat(issue ->
                 issue.getValidDays() == 45 && issue.getMaxDownloads() == 6));
     }
@@ -127,6 +137,8 @@ class EBookBorrowRequest3ServiceTest {
 
         assertThrows(IllegalStateException.class, () -> requestService.approveRequest(5L, 30, 3));
         verify(drmLicenseService, never()).issueLicense(any());
+        verify(notificationService, never()).notifyUser(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test

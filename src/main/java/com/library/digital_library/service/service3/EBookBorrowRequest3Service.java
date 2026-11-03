@@ -10,6 +10,7 @@ import com.library.digital_library.repository.BookRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.repository.repository3.DrmLicense3Repository;
 import com.library.digital_library.repository.repository3.EBookBorrowRequest3Repository;
+import com.library.digital_library.service.NotificationService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -26,6 +27,7 @@ public class EBookBorrowRequest3Service {
     private final BookRepository bookRepository;
     private final DrmLicense3Repository drmLicenseRepository;
     private final DrmLicenseService3 drmLicenseService;
+    private final NotificationService notificationService;
 
     @Transactional
     public EBookBorrowRequest3 createRequest(String username, Long bookId) {
@@ -42,12 +44,17 @@ public class EBookBorrowRequest3Service {
             throw new IllegalStateException("Bạn đã có giấy phép DRM còn hiệu lực cho sách này.");
         }
 
-        return requestRepository.save(EBookBorrowRequest3.builder()
+        EBookBorrowRequest3 request = requestRepository.save(EBookBorrowRequest3.builder()
                 .user(user)
                 .book(book)
                 .status(EBookRequestStatus3.PENDING)
                 .requestedAt(LocalDateTime.now())
                 .build());
+        notificationService.notifyUser(user.getId(),
+                "Yêu cầu mượn E-Book \"" + book.getTitle() + "\" đã được gửi và đang chờ duyệt.");
+        notificationService.notifyRole("ADMIN",
+                "Có yêu cầu mượn E-Book \"" + book.getTitle() + "\" mới từ " + user.getUsername() + ".");
+        return request;
     }
 
     @Transactional(readOnly = true)
@@ -97,7 +104,11 @@ public class EBookBorrowRequest3Service {
         request.setReviewNote(String.format(
                 "Đã duyệt: hiệu lực %d ngày, tối đa %d lượt tải.", validDays, maxDownloads));
         request.setLicenseKey(license.getLicenseKey());
-        return requestRepository.save(request);
+        EBookBorrowRequest3 approvedRequest = requestRepository.save(request);
+        notificationService.notifyUser(request.getUser().getId(),
+                "Yêu cầu E-Book \"" + request.getBook().getTitle()
+                        + "\" đã được duyệt và giấy phép DRM đã được cấp.");
+        return approvedRequest;
     }
 
     @Transactional
@@ -107,7 +118,11 @@ public class EBookBorrowRequest3Service {
         request.setStatus(EBookRequestStatus3.REJECTED);
         request.setReviewedAt(LocalDateTime.now());
         request.setReviewNote(note == null || note.isBlank() ? "Yêu cầu đã bị từ chối." : note.trim());
-        return requestRepository.save(request);
+        EBookBorrowRequest3 rejectedRequest = requestRepository.save(request);
+        notificationService.notifyUser(request.getUser().getId(),
+                "Yêu cầu E-Book \"" + request.getBook().getTitle() + "\" đã bị từ chối. "
+                        + request.getReviewNote());
+        return rejectedRequest;
     }
 
     private EBookBorrowRequest3 getRequest(Long requestId) {

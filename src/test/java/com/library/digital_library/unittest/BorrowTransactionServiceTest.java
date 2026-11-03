@@ -8,6 +8,7 @@ import com.library.digital_library.repository.BookRepository;
 import com.library.digital_library.repository.BorrowTransactionRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.service.BorrowTransactionService;
+import com.library.digital_library.service.NotificationService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ class BorrowTransactionServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private BorrowTransactionService transactionService;
@@ -67,6 +71,10 @@ class BorrowTransactionServiceTest {
         assertEquals("PENDING", transaction.getStatus());
         assertEquals(4, book.getQuantity());
         assertEquals(transaction.getBorrowDate().plusDays(14), transaction.getDueDate());
+        verify(notificationService).notifyUser(1L,
+                "Yêu cầu mượn sách \"Clean Code\" đã được gửi và đang chờ duyệt.");
+        verify(notificationService).notifyRole("ADMIN",
+                "Có yêu cầu mượn sách \"Clean Code\" mới từ reader.");
     }
 
     @Test
@@ -90,7 +98,9 @@ class BorrowTransactionServiceTest {
         when(bookRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(book));
 
         assertEquals("BORROWED", transactionService.approveTransaction(20L).getStatus());
+        verify(notificationService).notifyUser(1L, "Yêu cầu mượn sách \"Clean Code\" đã được duyệt.");
         assertEquals("RETURNED", transactionService.returnBook(20L).getStatus());
+        verify(notificationService).notifyUser(1L, "Sách \"Clean Code\" đã được ghi nhận trả thành công.");
         assertEquals(5, book.getQuantity());
     }
 
@@ -122,6 +132,7 @@ class BorrowTransactionServiceTest {
 
         assertEquals("REJECTED", rejected.getStatus());
         assertEquals(5, book.getQuantity());
+        verify(notificationService).notifyUser(1L, "Yêu cầu mượn sách \"Clean Code\" đã bị từ chối.");
     }
 
     @Test

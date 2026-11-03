@@ -73,6 +73,13 @@
         .notice { margin-bottom: 14px; padding: 11px 13px; border: 1px solid #d5e5d7; border-radius: 8px; background: #f0f7ef; color: var(--green); font-size: 10px; line-height: 1.5; }
         .notice.error { border-color: #f0d7d2; background: #fff4f1; color: var(--danger); }
         .notice[hidden] { display: none; }
+        .notification-list { display: grid; gap: 10px; padding: 14px 18px; }
+        .notification-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 13px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+        .notification-item.unread { border-color: #cbd9cc; background: #f5faf4; }
+        .notification-message { margin: 0; color: var(--ink); font-size: 11px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .notification-time { display: block; margin-top: 6px; color: var(--muted); font-size: 9px; }
+        .notification-empty, .notification-error { padding: 22px 18px; color: var(--muted); text-align: center; font-size: 11px; }
+        .notification-error { color: var(--danger); }
         .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
         .feature-card { min-height: 160px; display: flex; flex-direction: column; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); }
         .feature-card h2 { margin: 0 0 7px; font-family: "Times New Roman", serif; font-size: 18px; font-weight: 500; }
@@ -176,13 +183,18 @@
                 <div class="panel-head"><div><h2>Nhật ký truy cập E-Book</h2><p>Lịch sử các yêu cầu tải được DRM ghi nhận.</p></div></div>
                 <div class="table-wrap"><table><thead><tr><th>Thời điểm</th><th>Mã giấy phép</th><th>Kết quả</th><th>Chi tiết</th></tr></thead><tbody id="download-logs3-table"><tr><td class="loading" colspan="4">Đang tải nhật ký...</td></tr></tbody></table></div>
             </section>
-            <section class="feature-grid" aria-label="Các chức năng thành viên chưa khả dụng">
-                <article class="feature-card">
-                    <h2>Thông báo của tôi</h2>
-                    <p>Cập nhật duyệt mượn, nhắc hạn trả và thông tin thư viện.</p>
-                    <button class="placeholder-action" type="button" disabled>Xem thông báo</button>
-                    <span class="unavailable-badge">Chưa khả dụng</span>
-                </article>
+            <section class="panel" style="margin-top:16px" aria-labelledby="notifications-title">
+                <div class="panel-head">
+                    <div><h2 id="notifications-title">Thông báo của tôi</h2><p id="notifications-count">Đang tải thông báo...</p></div>
+                    <div class="header-actions">
+                        <button class="module-action" id="mark-all-notifications-read" type="button">Đánh dấu tất cả đã đọc</button>
+                        <button class="module-action" id="refresh-notifications" type="button">Tải lại</button>
+                    </div>
+                </div>
+                <div class="notice" id="notifications-notice" role="status" aria-live="polite" hidden></div>
+                <div class="notification-list" id="notifications-list" aria-live="polite">
+                    <p class="notification-empty">Đang tải thông báo...</p>
+                </div>
             </section>
         </div>
     </main>
@@ -196,6 +208,7 @@
             const numberFormat = new Intl.NumberFormat("vi-VN");
             let transactions = [];
             let userId = null;
+            let notifications = [];
 
             if (!token || role?.toUpperCase() !== "USER") {
                 window.location.replace(token && role?.toUpperCase() === "ADMIN" ? "/admin.html" : "/auth.html");
@@ -206,10 +219,13 @@
             statusFilter.addEventListener("change", renderTransactions);
             document.getElementById("refresh-loans3").addEventListener("click", loadModule3);
             document.getElementById("refresh-licenses3").addEventListener("click", loadLicenses3);
+            document.getElementById("refresh-notifications").addEventListener("click", loadNotifications);
+            document.getElementById("mark-all-notifications-read").addEventListener("click", markAllNotificationsRead);
             document.getElementById("ebook-request-form").addEventListener("submit", submitEBookRequest);
             loadEBookCatalog();
             loadEBookRequests();
             loadHistory();
+            loadNotifications();
 
             function makeElement(tag, className, text) {
                 const element = document.createElement(tag);
@@ -243,6 +259,80 @@
                     transactionsTable.innerHTML = `<tr><td class="error-state" colspan="7">${escapeHtml(error.message || "Không thể kết nối máy chủ.")}</td></tr>`;
                     document.getElementById("history-count").textContent = "Không tải được lịch sử";
                 }
+            }
+
+            async function loadNotifications() {
+                const list = document.getElementById("notifications-list");
+                list.replaceChildren(makeElement("p", "notification-empty", "Đang tải thông báo..."));
+                try {
+                    const data = await api("/api/notifications/mine");
+                    if (!Array.isArray(data)) throw new Error("Danh sách thông báo không đúng định dạng.");
+                    notifications = data;
+                    renderNotifications();
+                } catch (error) {
+                    list.replaceChildren(makeElement("p", "notification-error", error.message));
+                    document.getElementById("notifications-count").textContent = "Không tải được thông báo";
+                }
+            }
+
+            function renderNotifications() {
+                const list = document.getElementById("notifications-list");
+                const unreadCount = notifications.filter(notification => !notification.isRead).length;
+                document.getElementById("notifications-count").textContent =
+                    unreadCount ? `${unreadCount} thông báo chưa đọc` : `${notifications.length} thông báo`;
+                list.replaceChildren();
+                if (!notifications.length) {
+                    list.append(makeElement("p", "notification-empty", "Bạn chưa có thông báo nào."));
+                    return;
+                }
+                notifications.forEach(notification => {
+                    const item = makeElement("article", `notification-item${notification.isRead ? "" : " unread"}`);
+                    const content = document.createElement("div");
+                    content.append(makeElement("p", "notification-message", notification.message || ""));
+                    content.append(makeElement("time", "notification-time", formatDateTime(notification.createdAt)));
+                    item.append(content);
+                    if (!notification.isRead) {
+                        const readButton = makeElement("button", "module-action", "Đã đọc");
+                        readButton.type = "button";
+                        readButton.addEventListener("click", () => markNotificationRead(notification, readButton));
+                        item.append(readButton);
+                    }
+                    list.append(item);
+                });
+            }
+
+            async function markNotificationRead(notification, button) {
+                button.disabled = true;
+                try {
+                    await api(`/api/notifications/mine/${encodeURIComponent(notification.id)}/read`, { method: "PATCH" });
+                    notification.isRead = true;
+                    renderNotifications();
+                } catch (error) {
+                    button.disabled = false;
+                    showNotificationsNotice(error.message, "error");
+                }
+            }
+
+            async function markAllNotificationsRead() {
+                const button = document.getElementById("mark-all-notifications-read");
+                button.disabled = true;
+                try {
+                    await api("/api/notifications/mine/read-all", { method: "PATCH" });
+                    notifications.forEach(notification => { notification.isRead = true; });
+                    renderNotifications();
+                    showNotificationsNotice("Đã đánh dấu tất cả thông báo là đã đọc.", "success");
+                } catch (error) {
+                    showNotificationsNotice(error.message, "error");
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            function showNotificationsNotice(message, type) {
+                const notice = document.getElementById("notifications-notice");
+                notice.textContent = message;
+                notice.className = `notice${type === "error" ? " error" : ""}`;
+                notice.hidden = !message;
             }
 
             async function api(url, options = {}) {

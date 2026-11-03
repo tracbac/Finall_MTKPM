@@ -8,6 +8,7 @@ import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.repository.repository3.FineReceipt3Repository;
 import com.library.digital_library.repository.repository3.LoanRecord3Repository;
 import com.library.digital_library.service.service3.LoanService3;
+import com.library.digital_library.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class LoanService3Test {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private LoanService3 loanService;
@@ -81,6 +85,9 @@ class LoanService3Test {
         assertEquals(LocalDate.now().plusDays(14), result.getDueDate());
         verify(bookRepository, times(1)).save(sampleBook);
         verify(loanRecordRepository, times(1)).save(any(LoanRecord3.class));
+        verify(notificationService).notifyUser(10L,
+                "Bạn đã mượn sách \"Design Patterns in Java\" thành công. Hạn trả: "
+                        + LocalDate.now().plusDays(14) + ".");
     }
 
     @Test
@@ -163,6 +170,8 @@ class LoanService3Test {
         assertEquals(30000.0, returnedLoan.getFineAmount());
         assertFalse(returnedLoan.getFinePaid());
         verify(fineReceiptRepository, times(1)).save(any(FineReceipt3.class));
+        verify(notificationService).notifyUser(10L,
+                "Bạn đã trả sách \"Design Patterns in Java\" trễ hạn. Khoản phạt cần thanh toán: 30000.0 đ.");
     }
 
     @Test
@@ -190,6 +199,8 @@ class LoanService3Test {
         assertEquals(LoanStatus3.EXTENDED, result.getStatus());
         assertEquals(1, result.getRenewalCount());
         assertEquals(currentDue.plusDays(7), result.getDueDate());
+        verify(notificationService).notifyUser(10L,
+                "Đã gia hạn sách \"Design Patterns in Java\" đến ngày " + currentDue.plusDays(7) + ".");
     }
 
     @Test
@@ -259,5 +270,7 @@ class LoanService3Test {
         assertNotNull(paidFine.getPaidDate());
         assertTrue(loan.getFinePaid());
         verify(loanRecordRepository, times(1)).save(loan);
+        verify(notificationService).notifyUser(10L,
+                "Đã ghi nhận thanh toán khoản phạt 20000.0 đ bằng BANKING.");
     }
 }

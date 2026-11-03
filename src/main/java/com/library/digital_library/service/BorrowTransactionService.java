@@ -25,14 +25,17 @@ public class BorrowTransactionService {
     private final BorrowTransactionRepository transactionRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public BorrowTransactionService(
             BorrowTransactionRepository transactionRepository,
             BookRepository bookRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            NotificationService notificationService) {
         this.transactionRepository = transactionRepository;
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -56,7 +59,12 @@ public class BorrowTransactionService {
         transaction.setBorrowDate(LocalDate.now());
         transaction.setDueDate(LocalDate.now().plusDays(request.getBorrowDays()));
         transaction.setStatus(PENDING);
-        return transactionRepository.save(transaction);
+        BorrowTransaction savedTransaction = transactionRepository.save(transaction);
+        notificationService.notifyUser(user.getId(),
+                "Yêu cầu mượn sách \"" + book.getTitle() + "\" đã được gửi và đang chờ duyệt.");
+        notificationService.notifyRole("ADMIN",
+                "Có yêu cầu mượn sách \"" + book.getTitle() + "\" mới từ " + user.getUsername() + ".");
+        return savedTransaction;
     }
 
     @Transactional
@@ -64,7 +72,10 @@ public class BorrowTransactionService {
         BorrowTransaction transaction = findTransaction(transactionId);
         requireStatus(transaction, PENDING, "Only pending requests can be approved");
         transaction.setStatus(BORROWED);
-        return transactionRepository.save(transaction);
+        BorrowTransaction savedTransaction = transactionRepository.save(transaction);
+        notificationService.notifyUser(transaction.getUser().getId(),
+                "Yêu cầu mượn sách \"" + transaction.getBook().getTitle() + "\" đã được duyệt.");
+        return savedTransaction;
     }
 
     @Transactional
@@ -76,7 +87,10 @@ public class BorrowTransactionService {
                 .orElseThrow(() -> new NoSuchElementException("Book not found"));
         book.setQuantity(book.getQuantity() + 1);
         transaction.setStatus(REJECTED);
-        return transactionRepository.save(transaction);
+        BorrowTransaction savedTransaction = transactionRepository.save(transaction);
+        notificationService.notifyUser(transaction.getUser().getId(),
+                "Yêu cầu mượn sách \"" + transaction.getBook().getTitle() + "\" đã bị từ chối.");
+        return savedTransaction;
     }
 
     @Transactional
@@ -89,7 +103,10 @@ public class BorrowTransactionService {
         book.setQuantity(book.getQuantity() + 1);
         transaction.setStatus(RETURNED);
         transaction.setReturnDate(LocalDate.now());
-        return transactionRepository.save(transaction);
+        BorrowTransaction savedTransaction = transactionRepository.save(transaction);
+        notificationService.notifyUser(transaction.getUser().getId(),
+                "Sách \"" + transaction.getBook().getTitle() + "\" đã được ghi nhận trả thành công.");
+        return savedTransaction;
     }
 
     @Transactional

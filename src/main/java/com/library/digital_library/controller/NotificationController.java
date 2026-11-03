@@ -1,31 +1,51 @@
 package com.library.digital_library.controller;
 
+import com.library.digital_library.dto.NotificationDispatchResponse;
+import com.library.digital_library.dto.NotificationUpdateResponse;
+import com.library.digital_library.dto.SendNotificationRequest;
 import com.library.digital_library.model.Notification;
-import com.library.digital_library.repository.NotificationRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.library.digital_library.service.NotificationService;
+import jakarta.validation.Valid;
+import java.security.Principal;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/notifications")
+@RequiredArgsConstructor
 public class NotificationController {
 
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
-    // API 1: Gửi thông báo mới
-    @PostMapping("/send")
-    public ResponseEntity<Notification> sendNotification(@RequestBody Notification notification) {
-        notification.setIsRead(false);
-        Notification savedNoti = notificationRepository.save(notification);
-        return ResponseEntity.ok(savedNoti);
+    @GetMapping("/mine")
+    public ResponseEntity<List<Notification>> getMyNotifications(Principal principal) {
+        return ResponseEntity.ok(notificationService.getForUser(principal.getName()));
     }
 
-    // API 2: Lấy danh sách thông báo của user
-    @GetMapping("/{userId}")
-    public List<Notification> getNotificationsByUserId(@PathVariable Long userId) {
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    @PatchMapping("/mine/{notificationId}/read")
+    public ResponseEntity<Notification> markRead(
+            @PathVariable Long notificationId,
+            Principal principal) {
+        return ResponseEntity.ok(notificationService.markRead(principal.getName(), notificationId));
+    }
+
+    @PatchMapping("/mine/read-all")
+    public ResponseEntity<NotificationUpdateResponse> markAllRead(Principal principal) {
+        return ResponseEntity.ok(new NotificationUpdateResponse(
+                notificationService.markAllRead(principal.getName())));
+    }
+
+    @GetMapping("/admin")
+    public ResponseEntity<List<Notification>> getLatestForAdmin() {
+        return ResponseEntity.ok(notificationService.getLatestForAdmin());
+    }
+
+    @PostMapping("/admin/send")
+    public ResponseEntity<NotificationDispatchResponse> sendFromAdmin(
+            @Valid @RequestBody SendNotificationRequest request) {
+        return ResponseEntity.ok(new NotificationDispatchResponse(
+                notificationService.sendFromAdmin(request)));
     }
 }

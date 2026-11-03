@@ -115,7 +115,8 @@
         .field.full { grid-column: 1 / -1; }
         .field label { color: #4a574e; font-size: 10px; font-weight: 700; }
         .field input, .field select { width: 100%; min-height: 39px; padding: 0 10px; border: 1px solid #dfe4dc; border-radius: 7px; background: white; color: var(--ink); font-size: 11px; }
-        .field input:focus, .field select:focus { outline: 2px solid rgba(53, 93, 67, .16); border-color: #78927d; }
+        .field textarea { width: 100%; min-height: 100px; padding: 9px 10px; border: 1px solid #dfe4dc; border-radius: 7px; background: white; color: var(--ink); font: inherit; font-size: 11px; resize: vertical; }
+        .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid rgba(53, 93, 67, .16); border-color: #78927d; }
         .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
         .hint { margin: 11px 0 0; color: var(--muted); font-size: 9px; line-height: 1.6; }
         .unavailable { padding: 19px; border: 1px dashed #dfe3da; border-radius: 9px; background: #fafbf8; }
@@ -138,6 +139,7 @@
         .check-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px; color: #647067; font-size: 10px; }
         .check-row input { accent-color: var(--green); }
         .check-row input:disabled { cursor: not-allowed; }
+        .notification-message-cell { max-width: 430px; white-space: normal; overflow-wrap: anywhere; }
         .metric-placeholder { display: block; margin-top: 12px; color: #9aa39b; font-family: "Times New Roman", serif; font-size: 26px; }
         .view[hidden], [hidden] { display: none !important; }
         dialog { width: min(610px, calc(100% - 28px)); max-height: calc(100% - 32px); padding: 0; overflow: auto; border: 1px solid var(--line); border-radius: 13px; background: var(--paper); color: var(--ink); box-shadow: 0 25px 80px #1c2b2040; }
@@ -314,17 +316,37 @@
                     </section>
                 </section>
                 <section class="view" id="view-notifications" hidden>
-                    <div class="page-heading"><div><p class="eyebrow">Cập nhật hoạt động</p><h1>Thông báo</h1><p class="subtitle">Mẫu giao diện thông báo cho quản trị viên và thành viên.</p></div><span class="unavailable-badge">Chưa khả dụng</span></div>
-                    <div class="unavailable-grid">
-                        <section class="panel"><div class="panel-heading"><div><h2>Kênh gửi thông báo</h2><p>Tùy chọn minh họa; chưa lưu hoặc gửi thông báo.</p></div></div>
-                            <div class="check-list">
-                                <label class="check-row"><span>Email khi có yêu cầu mượn mới</span><input type="checkbox" disabled></label>
-                                <label class="check-row"><span>Thông báo khi sắp đến hạn trả</span><input type="checkbox" disabled></label>
-                                <label class="check-row"><span>Cảnh báo giao dịch quá hạn</span><input type="checkbox" disabled></label>
-                            </div><div class="form-actions"><button class="primary-button" type="button" disabled>Lưu tùy chọn</button></div>
-                        </section>
-                        <section class="panel"><div class="panel-heading"><div><h2>Lịch sử gửi</h2><p>Thông báo gửi đi sẽ xuất hiện tại đây.</p></div></div><div class="unavailable"><strong>Chưa khả dụng</strong><p>Ứng dụng chưa có dịch vụ gửi email/thông báo hoặc API lưu lịch sử gửi.</p></div></section>
-                    </div>
+                    <div class="page-heading"><div><p class="eyebrow">Cập nhật hoạt động</p><h1>Thông báo</h1><p class="subtitle">Gửi thông báo trong ứng dụng và xem lịch sử gần đây.</p></div></div>
+                    <section class="panel">
+                        <div class="panel-heading"><div><h2>Gửi thông báo</h2><p>Thông báo sẽ xuất hiện trong mục “Thông báo của tôi” của thành viên.</p></div></div>
+                        <div class="dialog-body">
+                            <div class="notice" id="notification-notice" role="status" aria-live="polite" hidden></div>
+                            <form id="notification-form">
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label for="notification-recipient">Người nhận</label>
+                                        <select id="notification-recipient" name="userId" required>
+                                            <option value="all">Tất cả thành viên</option>
+                                        </select>
+                                    </div>
+                                    <div class="field full">
+                                        <label for="notification-message">Nội dung</label>
+                                        <textarea id="notification-message" name="message" rows="4" maxlength="1000" required></textarea>
+                                    </div>
+                                </div>
+                                <p class="hint">Đây là thông báo trong ứng dụng; hệ thống chưa gửi email hoặc thông báo đẩy.</p>
+                                <div class="form-actions"><button class="primary-button" id="notification-submit" type="submit">Gửi thông báo</button></div>
+                            </form>
+                        </div>
+                    </section>
+                    <section class="panel" style="margin-top:16px">
+                        <div class="panel-heading"><div><h2>Lịch sử thông báo</h2><p id="notification-history-count">Đang tải...</p></div><button class="secondary-button" id="refresh-notifications" type="button">Tải lại</button></div>
+                        <div class="table-wrap">
+                            <table><thead><tr><th>Người nhận</th><th>Nội dung</th><th>Thời gian</th><th>Trạng thái</th></tr></thead>
+                                <tbody id="notifications-table"><tr><td class="loading" colspan="4">Đang tải thông báo...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </section>
                 </section>
                 <section class="view" id="view-reports" hidden>
                     <div class="page-heading"><div><p class="eyebrow">Chất lượng phần mềm</p><h1>Kiểm thử &amp; báo cáo</h1><p class="subtitle">Khung tổng hợp kết quả kiểm thử và tình trạng chất lượng.</p></div><span class="unavailable-badge">Chưa khả dụng</span></div>
@@ -384,6 +406,8 @@
             let borrows = [];
             let loans3 = [];
             let drmUsers = [];
+            let notificationUsers = [];
+            let adminNotifications = [];
             let activeView = "overview";
 
             document.getElementById("profile-name").textContent = username || "Quản trị viên";
@@ -403,6 +427,8 @@
             document.getElementById("refresh-licenses-button").addEventListener("click", loadLicenses);
             document.getElementById("refresh-loans-button").addEventListener("click", loadLoans3);
             document.getElementById("check-overdue-button").addEventListener("click", checkOverdue);
+            document.getElementById("notification-form").addEventListener("submit", sendNotification);
+            document.getElementById("refresh-notifications").addEventListener("click", loadAdminNotifications);
             document.querySelectorAll(".nav-button[data-view]").forEach(button =>
                 button.addEventListener("click", () => showView(button.dataset.view)));
             document.querySelectorAll("[data-go]").forEach(button =>
@@ -440,6 +466,10 @@
                     populateBookOptions();
                     loadDrmUsers();
                     loadEBookRequests();
+                }
+                if (name === "notifications") {
+                    loadNotificationUsers();
+                    loadAdminNotifications();
                 }
                 if (name === "integrations") {
                     const input = document.getElementById("google-search-input");
@@ -484,6 +514,89 @@
             async function loadInitialData() {
                 await Promise.all([loadBooks(), loadBorrows()]);
                 renderOverview();
+            }
+
+            async function loadNotificationUsers() {
+                const select = document.getElementById("notification-recipient");
+                try {
+                    const data = await api("/api/admin/users");
+                    if (!Array.isArray(data)) throw new Error("Danh sách thành viên không đúng định dạng.");
+                    notificationUsers = data;
+                    const selected = select.value;
+                    select.replaceChildren(new Option("Tất cả thành viên", "all"));
+                    notificationUsers
+                        .filter(user => String(user.role || "").toUpperCase() === "USER")
+                        .forEach(user =>
+                        select.add(new Option(`${user.username} (${user.email})`, user.id)));
+                    if ([...select.options].some(option => option.value === selected)) select.value = selected;
+                    if (adminNotifications.length) renderAdminNotifications();
+                } catch (error) {
+                    select.replaceChildren(new Option("Không tải được danh sách thành viên", ""));
+                    showInlineNotice("notification-notice", error.message, "error");
+                }
+            }
+
+            async function loadAdminNotifications() {
+                const body = document.getElementById("notifications-table");
+                body.innerHTML = '<tr><td class="loading" colspan="4">Đang tải thông báo...</td></tr>';
+                try {
+                    const data = await api("/api/notifications/admin");
+                    if (!Array.isArray(data)) throw new Error("Danh sách thông báo không đúng định dạng.");
+                    adminNotifications = data;
+                    renderAdminNotifications();
+                } catch (error) {
+                    document.getElementById("notification-history-count").textContent = "Không tải được lịch sử";
+                    body.innerHTML = `<tr><td class="error-state" colspan="4">${escapeHtml(error.message)}</td></tr>`;
+                }
+            }
+
+            function renderAdminNotifications() {
+                const body = document.getElementById("notifications-table");
+                document.getElementById("notification-history-count").textContent =
+                    `${adminNotifications.length} thông báo gần đây`;
+                body.replaceChildren();
+                if (!adminNotifications.length) {
+                    body.innerHTML = '<tr><td class="empty" colspan="4">Chưa có thông báo nào.</td></tr>';
+                    return;
+                }
+                adminNotifications.forEach(notification => {
+                    const recipient = notificationUsers.find(user => Number(user.id) === Number(notification.userId));
+                    const row = document.createElement("tr");
+                    row.append(
+                        makeElement("td", "", recipient?.username || `Thành viên #${notification.userId}`),
+                        makeElement("td", "notification-message-cell", notification.message || ""),
+                        makeElement("td", "", formatDateTime(notification.createdAt)),
+                        makeElement("td", "", notification.isRead ? "Đã đọc" : "Chưa đọc"));
+                    body.append(row);
+                });
+            }
+
+            async function sendNotification(event) {
+                event.preventDefault();
+                const form = event.currentTarget;
+                if (!form.reportValidity()) return;
+                const recipient = document.getElementById("notification-recipient").value;
+                const payload = {
+                    userId: recipient === "all" ? null : Number(recipient),
+                    message: document.getElementById("notification-message").value.trim()
+                };
+                const button = document.getElementById("notification-submit");
+                button.disabled = true;
+                try {
+                    const result = await api("/api/notifications/admin/send", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    showInlineNotice("notification-notice",
+                        `Đã gửi thông báo đến ${result.recipientCount} thành viên.`, "success");
+                    document.getElementById("notification-message").value = "";
+                    await loadAdminNotifications();
+                } catch (error) {
+                    showInlineNotice("notification-notice", error.message, "error");
+                } finally {
+                    button.disabled = false;
+                }
             }
 
             async function loadBooks() {

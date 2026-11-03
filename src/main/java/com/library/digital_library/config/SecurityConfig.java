@@ -91,6 +91,7 @@ public class SecurityConfig {
                 .requestMatchers("/", "/index.html", "/auth.html", "/admin.html", "/my-books.html", "/favicon.ico").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/notifications/admin", "/api/notifications/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/v3/drm/issue", "/api/v3/drm/revoke").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v3/drm/user/**", "/api/v3/drm/license/**",
                         "/api/v3/ebooks/logs/user/**").hasRole("ADMIN")

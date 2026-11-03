@@ -7,6 +7,7 @@ import com.library.digital_library.repository.BookRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.repository.repository3.FineReceipt3Repository;
 import com.library.digital_library.repository.repository3.LoanRecord3Repository;
+import com.library.digital_library.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class LoanService3 {
     private final FineReceipt3Repository fineReceiptRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public static final double DAILY_FINE_RATE = 5000.0; // 5.000 VNĐ / ngày trễ hạn
     public static final int DEFAULT_LOAN_DAYS = 14;     // Mượn mặc định 14 ngày
@@ -81,7 +83,11 @@ public class LoanService3 {
                 .notes("Mượn thành công. Hạn trả: " + today.plusDays(loanDays))
                 .build();
 
-        return loanRecordRepository.save(loanRecord);
+        LoanRecord3 savedLoan = loanRecordRepository.save(loanRecord);
+        notificationService.notifyUser(user.getId(),
+                "Bạn đã mượn sách \"" + book.getTitle() + "\" thành công. Hạn trả: "
+                        + loanRecord.getDueDate() + ".");
+        return savedLoan;
     }
 
     /**
@@ -131,7 +137,13 @@ public class LoanService3 {
             loan.setNotes("Đã trả sách đúng hạn.");
         }
 
-        return loanRecordRepository.save(loan);
+        LoanRecord3 savedLoan = loanRecordRepository.save(loan);
+        String message = loan.getFineAmount() != null && loan.getFineAmount() > 0
+                ? "Bạn đã trả sách \"" + book.getTitle() + "\" trễ hạn. Khoản phạt cần thanh toán: "
+                        + loan.getFineAmount() + " đ."
+                : "Bạn đã trả sách \"" + book.getTitle() + "\" thành công.";
+        notificationService.notifyUser(loan.getUser().getId(), message);
+        return savedLoan;
     }
 
     /**
@@ -169,7 +181,10 @@ public class LoanService3 {
         loan.setStatus(LoanStatus3.EXTENDED);
         loan.setNotes("Gia hạn lần " + loan.getRenewalCount() + " thêm " + extraDays + " ngày. Hạn mới: " + loan.getDueDate());
 
-        return loanRecordRepository.save(loan);
+        LoanRecord3 savedLoan = loanRecordRepository.save(loan);
+        notificationService.notifyUser(loan.getUser().getId(),
+                "Đã gia hạn sách \"" + loan.getBook().getTitle() + "\" đến ngày " + loan.getDueDate() + ".");
+        return savedLoan;
     }
 
     /**
@@ -190,6 +205,9 @@ public class LoanService3 {
             loan.setFineAmount(estimatedFine);
             loan.setNotes("Quá hạn " + overdueDays + " ngày. Tiền phạt ước tính: " + estimatedFine + " VNĐ.");
             loanRecordRepository.save(loan);
+            notificationService.notifyUser(loan.getUser().getId(),
+                    "Sách \"" + loan.getBook().getTitle() + "\" đã quá hạn " + overdueDays
+                            + " ngày. Phí ước tính: " + estimatedFine + " đ.");
         }
         return overdueLoans;
     }
@@ -225,6 +243,8 @@ public class LoanService3 {
                 loanRecordRepository.save(loan);
             }
         }
+        notificationService.notifyUser(fine.getUser().getId(),
+                "Đã ghi nhận thanh toán khoản phạt " + fine.getTotalFine() + " đ bằng " + paymentMethod + ".");
 
         return updatedFine;
     }
