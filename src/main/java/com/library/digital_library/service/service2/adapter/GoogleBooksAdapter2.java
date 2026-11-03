@@ -82,7 +82,7 @@ public class GoogleBooksAdapter2 implements ExternalBookCatalogPort2 {
         // 2. Chuyển mảng thể loại thành chuỗi
         String categoryStr = (info.getCategories() != null && !info.getCategories().isEmpty())
                 ? String.join(", ", info.getCategories())
-                : "Công nghệ thông tin";
+                : "Chưa phân loại";
 
         // 3. Trích xuất mã ISBN (ưu tiên ISBN_13, sau đó ISBN_10)
         String extractedIsbn = null;

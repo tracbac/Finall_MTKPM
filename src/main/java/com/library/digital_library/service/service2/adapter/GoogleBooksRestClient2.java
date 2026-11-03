@@ -95,6 +95,7 @@ public class GoogleBooksRestClient2 {
         try {
             URI openLibUri = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
                     .queryParam("q", searchQuery)
+                    .queryParam("fields", "key,title,author_name,publisher,first_publish_year,number_of_pages_median,isbn,cover_i,subject")
                     .queryParam("page", safePage)
                     .queryParam("limit", safeMaxResults)
                     .build()
@@ -115,6 +116,7 @@ public class GoogleBooksRestClient2 {
                     String orQuery = searchQuery.replaceAll("\\s+", " OR ");
                     URI orUri = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
                             .queryParam("q", orQuery)
+                            .queryParam("fields", "key,title,author_name,publisher,first_publish_year,number_of_pages_median,isbn,cover_i,subject")
                             .queryParam("page", safePage)
                             .queryParam("limit", safeMaxResults)
                             .build()
@@ -193,7 +195,7 @@ public class GoogleBooksRestClient2 {
                                 .publishedDate(doc.has("first_publish_year") ? doc.get("first_publish_year").asText() : "2022")
                                 .description("Tài liệu tra cứu trực tuyến quốc tế từ OpenLibrary về chủ đề " + title + ".")
                                 .pageCount(pages > 0 ? pages : 320)
-                                .categories(List.of("Công nghệ & Khoa học"))
+                                .categories(List.of(resolveCategory(doc, title)))
                                 .industryIdentifiers(List.of(
                                         GoogleBooksModel2.IndustryIdentifier.builder().type("ISBN_13").identifier(isbnVal != null ? isbnVal : "978" + (long)(Math.random() * 10000000000L)).build()
                                 ))
@@ -219,6 +221,103 @@ public class GoogleBooksRestClient2 {
             log.error("Lỗi khi chuyển đổi dữ liệu từ OpenLibrary: {}", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Tự động phân tích và trích xuất thể loại/chủ đề chính xác của cuốn sách
+     * từ danh sách subjects của OpenLibrary hoặc từ tiêu đề tài liệu.
+     */
+    private String resolveCategory(JsonNode doc, String title) {
+        List<String> rawSubjects = new ArrayList<>();
+        if (doc != null && doc.has("subject") && doc.get("subject").isArray()) {
+            for (JsonNode s : doc.get("subject")) {
+                if (s != null && s.isTextual() && !s.asText().isBlank()) {
+                    rawSubjects.add(s.asText().trim());
+                }
+            }
+        }
+
+        // 1. Nhóm Y tế, Sức khỏe, Y học, Dược & Tâm lý sức khỏe
+        if (matchesDomain(rawSubjects, title, "health", "medicine", "medical", "disease", "nursing", "hospital",
+                "sức khỏe", "y tế", "y học", "bệnh", "dược", "clinical", "wellness")) {
+            if (matchesDomain(rawSubjects, title, "psychology", "psychological", "tâm lý", "mental")) {
+                return "Y tế & Tâm lý";
+            }
+            return "Y tế & Sức khỏe";
+        }
+
+        // 2. Nhóm Lịch sử, Xã hội học & Văn minh
+        if (matchesDomain(rawSubjects, title, "history", "historical", "civilization", "archaeology", "lịch sử", "văn minh")) {
+            return "Lịch sử & Xã hội";
+        }
+
+        // 3. Nhóm Tâm lý học & Hành vi con người
+        if (matchesDomain(rawSubjects, title, "psychology", "psychological", "behavior", "behavioral", "tâm lý", "mental illness", "counseling")) {
+            return "Tâm lý học";
+        }
+
+        // 4. Nhóm Kinh tế, Kinh doanh, Quản trị, Đầu tư, Tài chính
+        if (matchesDomain(rawSubjects, title, "business", "economics", "economic", "finance", "management", "marketing",
+                "commerce", "investment", "kinh tế", "kinh doanh", "tài chính", "quản trị", "đầu tư")) {
+            return "Kinh tế & Quản trị";
+        }
+
+        // 5. Nhóm Công nghệ thông tin, Lập trình, Phần mềm
+        if (matchesDomain(rawSubjects, title, "computer", "software", "programming", "java", "python", "algorithm",
+                "database", "công nghệ thông tin", "lập trình", "phần mềm", "cybersecurity", "cloud", "artificial intelligence")) {
+            return "Công nghệ thông tin";
+        }
+
+        // 6. Nhóm Khoa học tự nhiên & Toán học
+        if (matchesDomain(rawSubjects, title, "physics", "chemistry", "biology", "mathematics", "math", "science",
+                "khoa học", "toán học", "vật lý", "hóa học", "sinh học", "astronomy")) {
+            return "Khoa học tự nhiên";
+        }
+
+        // 7. Nhóm Văn học, Nghệ thuật & Tiểu thuyết
+        if (matchesDomain(rawSubjects, title, "fiction", "novel", "literature", "poetry", "drama", "văn học",
+                "tiểu thuyết", "truyện", "art", "fine arts", "painting", "photography")) {
+            return "Văn học & Nghệ thuật";
+        }
+
+        // 8. Nhóm Giáo dục & Kỹ năng sống
+        if (matchesDomain(rawSubjects, title, "education", "teaching", "learning", "pedagogy", "self-help",
+                "self-improvement", "giáo dục", "kỹ năng", "đào tạo")) {
+            return "Giáo dục & Kỹ năng";
+        }
+
+        // 9. Ưu tiên lấy subject thực tế sạch đầu tiên từ OpenLibrary nếu có
+        for (String raw : rawSubjects) {
+            if (raw.length() >= 3 && raw.length() <= 30 && !raw.contains(":") && !raw.matches(".*\\d{2,}.*")) {
+                return raw;
+            }
+        }
+
+        return "Tổng hợp";
+    }
+
+    private boolean matchesDomain(List<String> subjects, String title, String... keywords) {
+        String lowerTitle = (title != null) ? title.toLowerCase(Locale.ROOT) : "";
+        for (String kw : keywords) {
+            String lowerKw = kw.toLowerCase(Locale.ROOT);
+            // Kiểm tra trong tiêu đề sách (nếu keyword ngắn như 'art' thì kiểm tra nguyên từ \b)
+            if (lowerKw.length() <= 3) {
+                if (lowerTitle.matches(".*\\b" + lowerKw + "\\b.*")) return true;
+            } else if (lowerTitle.contains(lowerKw)) {
+                return true;
+            }
+
+            // Kiểm tra trong danh sách subjects
+            for (String sub : subjects) {
+                String lowerSub = sub.toLowerCase(Locale.ROOT);
+                if (lowerKw.length() <= 3) {
+                    if (lowerSub.matches(".*\\b" + lowerKw + "\\b.*")) return true;
+                } else if (lowerSub.contains(lowerKw)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private GoogleBooksModel2.GoogleVolumesResponse2 buildOfflineMockResponse(String query, int limit) {
@@ -282,6 +381,22 @@ public class GoogleBooksRestClient2 {
                 "Addison-Wesley", "2018", 448, "Tái cấu trúc mã / OOP", "9780201485677",
                 "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
                 "Phương pháp và kỹ thuật cải thiện thiết kế mã nguồn mà không làm thay đổi hành vi bên ngoài."));
+
+        // --- NHÓM Y TẾ, SỨC KHỎE & TÂM LÝ ---
+        allCatalog.add(createMockItem("HLT-01", "Why We Sleep: Unlocking the Power of Sleep and Dreams", List.of("Matthew Walker"),
+                "Scribner", "2017", 368, "Y tế & Sức khỏe", "9781501144318",
+                "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
+                "Nghiên cứu khoa học đột phá về tầm quan trọng sống còn của giấc ngủ đối với thể chất, tinh thần và tuổi thọ."));
+
+        allCatalog.add(createMockItem("HLT-02", "Health Psychology: An Introduction to Behavior and Health", List.of("Linda Brannon", "Jess Feist"),
+                "Wadsworth Publishing", "2017", 560, "Y tế & Tâm lý", "9781337094641",
+                "https://images.unsplash.com/photo-1532012164546-f432f2e37b73?w=300",
+                "Giáo trình toàn diện về mối tương quan giữa hành vi, tâm lý và sức khỏe con người, kiểm soát stress và bệnh tật."));
+
+        allCatalog.add(createMockItem("HLT-03", "Nudge: Improving Decisions About Health, Wealth, and Happiness", List.of("Richard H. Thaler", "Cass R. Sunstein"),
+                "Yale University Press", "2008", 312, "Kinh tế & Quản trị", "9780143115266",
+                "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300",
+                "Kiến trúc lựa chọn và kinh tế học hành vi giúp con người đưa ra quyết định tốt hơn về sức khỏe, tài chính và cuộc sống."));
 
         // Lọc theo từ khóa
         String lowerQuery = query.toLowerCase(Locale.ROOT);
