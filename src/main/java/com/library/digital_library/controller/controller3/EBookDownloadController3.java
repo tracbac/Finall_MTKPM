@@ -6,6 +6,7 @@ import com.library.digital_library.model.model3.DownloadResult3;
 import com.library.digital_library.repository.repository3.DownloadLog3Repository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.service.EBookStorageException;
+import com.library.digital_library.service.service3.DownloadLimitExceededException;
 import com.library.digital_library.service.service3.EBookDownloadService3;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -64,6 +65,11 @@ public class EBookDownloadController3 {
             headers.set("X-Remaining-Downloads", String.valueOf(result.getRemainingDownloads()));
             return ResponseEntity.ok().headers(headers).body(result.getFileContent());
 
+        } catch (DownloadLimitExceededException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(DownloadResult3.builder()
+                    .success(false)
+                    .message(e.getMessage())
+                    .build());
         } catch (SecurityException e) {
             // Khi Proxy từ chối truy cập do vi phạm quyền (nợ phạt, hết hạn, quá lượt...)
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(DownloadResult3.builder()

@@ -6,6 +6,9 @@
     <meta name="theme-color" content="#f7f6f1">
     <meta name="description" content="Đăng nhập hoặc tạo tài khoản tại Thư viện Mộc.">
     <title>Đăng nhập | Thư viện Mộc</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
             color-scheme: light;
@@ -28,7 +31,7 @@
             grid-template-rows: auto 1fr auto;
             background: var(--cream);
             color: var(--ink);
-            font-family: "Segoe UI", Arial, sans-serif;
+            font-family: "Lora", Georgia, serif;
             -webkit-font-smoothing: antialiased;
         }
         a { color: inherit; text-decoration: none; }
@@ -36,7 +39,7 @@
         .shell { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
         .topbar { height: 78px; display: flex; align-items: center; border-bottom: 1px solid rgba(43, 61, 48, .08); }
         .topbar-inner { display: flex; align-items: center; justify-content: space-between; }
-        .brand { display: inline-flex; align-items: center; gap: 11px; font-family: "Times New Roman", serif; font-size: 23px; font-weight: 700; }
+        .brand { display: inline-flex; align-items: center; gap: 11px; font-family: "Merriweather", Georgia, serif; font-size: 23px; font-weight: 700; }
         .brand-mark {
             width: 40px; height: 40px; display: grid; place-items: center;
             border-radius: 13px 13px 13px 4px; background: var(--green); color: #fff;
@@ -65,7 +68,7 @@
         .eyebrow::before { width: 20px; height: 1px; content: ""; background: currentColor; }
         h1, h2, p { margin-top: 0; }
         .welcome-panel h1 {
-            max-width: 315px; margin-bottom: 13px; font-family: "Times New Roman", serif;
+            max-width: 315px; margin-bottom: 13px; font-family: "Merriweather", Georgia, serif;
             font-size: clamp(36px, 4vw, 48px); font-weight: 500; line-height: 1.04;
         }
         .welcome-panel h1 em { color: var(--green); font-weight: 500; }
@@ -87,12 +90,12 @@
         }
         .art-book.front::before { width: 1px; position: absolute; top: 0; bottom: 0; left: 8px; content: ""; background: rgba(255,255,255,.3); }
         .art-book small { font-size: 6px; letter-spacing: 1px; text-transform: uppercase; }
-        .art-book strong { font-family: "Times New Roman", serif; font-size: 22px; font-weight: 500; line-height: 1.05; }
-        .art-book span { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; font-family: "Times New Roman", serif; }
-        .quote { position: relative; z-index: 1; margin: 12px 0 0; color: #68756c; font-family: "Times New Roman", serif; font-size: 13px; font-style: italic; }
+        .art-book strong { font-family: "Merriweather", Georgia, serif; font-size: 22px; font-weight: 500; line-height: 1.05; }
+        .art-book span { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; font-family: "Merriweather", Georgia, serif; }
+        .quote { position: relative; z-index: 1; margin: 12px 0 0; color: #68756c; font-family: "Merriweather", Georgia, serif; font-size: 13px; font-style: italic; }
         .form-panel { display: flex; align-items: center; padding: 50px 60px; }
         .form-content { width: 100%; max-width: 370px; margin: 0 auto; }
-        .form-content h2 { margin-bottom: 8px; font-family: "Times New Roman", serif; font-size: 33px; font-weight: 500; }
+        .form-content h2 { margin-bottom: 8px; font-family: "Merriweather", Georgia, serif; font-size: 33px; font-weight: 500; }
         .form-intro { margin-bottom: 25px; color: var(--muted); font-size: 12px; line-height: 1.6; }
         .tab-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 23px; padding: 4px; border-radius: 9px; background: #f1f2ec; }
         .tab {
@@ -172,7 +175,7 @@
                 <span class="brand-mark" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 5.5v12M8 7h8M8 10h7"/></svg>
                 </span>
-                <span>thư viện mộc</span>
+                <span>Thư viện mộc</span>
             </a>
             <a class="home-link" href="/">← Quay lại thư viện</a>
         </div>

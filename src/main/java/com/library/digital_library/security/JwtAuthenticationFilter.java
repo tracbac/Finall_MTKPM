@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.http.HttpMethod;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -22,6 +23,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        return HttpMethod.POST.matches(request.getMethod())
+                && ("/api/auth/register".equals(path) || "/api/auth/login".equals(path));
+    }
 
     @Override
     protected void doFilterInternal(

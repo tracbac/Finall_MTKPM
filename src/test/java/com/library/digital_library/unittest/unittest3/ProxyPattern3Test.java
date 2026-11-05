@@ -9,6 +9,7 @@ import com.library.digital_library.repository.repository3.DrmLicense3Repository;
 import com.library.digital_library.repository.repository3.FineReceipt3Repository;
 import com.library.digital_library.repository.repository3.LoanRecord3Repository;
 import com.library.digital_library.service.service3.EBookDownloadProxy3;
+import com.library.digital_library.service.service3.DownloadLimitExceededException;
 import com.library.digital_library.service.service3.RealEBookDownloadService3;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -218,6 +219,7 @@ class ProxyPattern3Test {
 
         SecurityException ex = assertThrows(SecurityException.class, () -> downloadProxy.downloadEBook(validRequest));
 
+        assertInstanceOf(DownloadLimitExceededException.class, ex);
         assertTrue(ex.getMessage().contains("tối đa cho phép"));
         verify(realService, never()).downloadEBook(any());
         verify(downloadLogRepository, times(1)).save(argThat(log -> "DENIED".equals(log.getStatus())));
