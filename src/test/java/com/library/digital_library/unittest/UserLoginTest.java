@@ -15,8 +15,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
-
-@org.junit.jupiter.api.Disabled("Legacy test disabled due to UserService refactoring")
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Kiểm thử chức năng Đăng nhập (User Login Unit Test)")
 class UserLoginTest {
@@ -42,6 +40,35 @@ class UserLoginTest {
     @Test
     @DisplayName("Test Đăng nhập thành công với thông tin chính xác")
     void testLogin_Success() {
-        assertNotNull(sampleUser);
+        when(userRepository.findByUsername("tracbac")).thenReturn(Optional.of(sampleUser));
+
+        User loggedInUser = userService.login("tracbac", "123456");
+
+        assertNotNull(loggedInUser);
+        assertEquals("tracbac", loggedInUser.getUsername());
+    }
+
+    @Test
+    @DisplayName("Test Đăng nhập thất bại do sai mật khẩu")
+    void testLogin_WrongPassword_ThrowsException() {
+        when(userRepository.findByUsername("tracbac")).thenReturn(Optional.of(sampleUser));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userService.login("tracbac", "wrongpassword");
+        });
+
+        assertEquals("Mật khẩu không chính xác!", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Test Đăng nhập thất bại do không tìm thấy tài khoản")
+    void testLogin_UserNotFound_ThrowsException() {
+        when(userRepository.findByUsername("notfound")).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userService.login("notfound", "123456");
+        });
+
+        assertEquals("Không tìm thấy tài khoản người dùng!", exception.getMessage());
     }
 }
