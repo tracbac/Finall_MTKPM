@@ -16,4 +16,13 @@ public class UserService {
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
+
+    public User login(String username, String password) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản người dùng!"));
+        if (!user.getPassword().equals(password)) {
+            throw new RuntimeException("Mật khẩu không chính xác!");
+        }
+        return user;
+    }
 }
