@@ -39,4 +39,12 @@ public class BorrowController {
         return ResponseEntity.ok(BorrowTransactionResponse.from(
                 borrowTransactionService.cancelBorrowRequest(principal.getName(), id)));
     }
+
+    @PutMapping("/{id}/renew")
+    public ResponseEntity<BorrowTransactionResponse> renewBorrow(
+            @PathVariable Long id,
+            Principal principal) {
+        return ResponseEntity.ok(BorrowTransactionResponse.from(
+                borrowTransactionService.renewBorrow(principal.getName(), id)));
+    }
 }

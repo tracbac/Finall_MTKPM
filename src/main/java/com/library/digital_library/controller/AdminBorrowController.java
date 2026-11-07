@@ -37,4 +37,10 @@ public class AdminBorrowController {
         return ResponseEntity.ok(BorrowTransactionResponse.from(
                 borrowTransactionService.returnBook(id)));
     }
+
+    @PutMapping("/{id}/renew")
+    public ResponseEntity<BorrowTransactionResponse> renewBorrow(@PathVariable Long id) {
+        return ResponseEntity.ok(BorrowTransactionResponse.from(
+                borrowTransactionService.renewBorrowByAdmin(id)));
+    }
 }

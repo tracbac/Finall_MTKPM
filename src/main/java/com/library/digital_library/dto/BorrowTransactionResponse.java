@@ -12,7 +12,9 @@ public record BorrowTransactionResponse(
         LocalDate borrowDate,
         LocalDate dueDate,
         LocalDate returnDate,
-        String status) {
+        String status,
+        Double fineAmount,
+        Integer renewalCount) {
 
     public static BorrowTransactionResponse from(BorrowTransaction transaction) {
         return new BorrowTransactionResponse(
@@ -24,6 +26,8 @@ public record BorrowTransactionResponse(
                 transaction.getBorrowDate(),
                 transaction.getDueDate(),
                 transaction.getReturnDate(),
-                transaction.getStatus());
+                transaction.getStatus(),
+                transaction.getCurrentFineAmount(),
+                transaction.getRenewalCount() == null ? 0 : transaction.getRenewalCount());
     }
 }

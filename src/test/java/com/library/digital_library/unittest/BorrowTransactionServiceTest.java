@@ -1,6 +1,7 @@
 package com.library.digital_library.unittest;
 
 import com.library.digital_library.dto.BorrowRequest;
+import com.library.digital_library.dto.BorrowTransactionResponse;
 import com.library.digital_library.model.Book;
 import com.library.digital_library.model.BorrowTransaction;
 import com.library.digital_library.model.User;
@@ -9,6 +10,7 @@ import com.library.digital_library.repository.BorrowTransactionRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.service.BorrowTransactionService;
 import com.library.digital_library.service.NotificationService;
+import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,6 +107,81 @@ class BorrowTransactionServiceTest {
     }
 
     @Test
+    void returnAfterDueDateCalculatesAndNotifiesFinalFine() {
+        BorrowTransaction transaction = transaction("BORROWED");
+        transaction.setDueDate(LocalDate.now().minusDays(3));
+        when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
+        when(transactionRepository.save(any(BorrowTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(bookRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(book));
+
+        BorrowTransaction returned = transactionService.returnBook(20L);
+
+        assertEquals(15000.0, returned.getFineAmount());
+        assertEquals(LocalDate.now(), returned.getReturnDate());
+        verify(notificationService).notifyUser(1L,
+                "Sách \"Clean Code\" đã được trả trễ. Phí quá hạn: 15000.0 đ.");
+    }
+
+    @Test
+    void renewBorrowExtendsDueDateAndIncrementsCount() {
+        BorrowTransaction transaction = transaction("BORROWED");
+        LocalDate dueDate = LocalDate.now().plusDays(2);
+        transaction.setDueDate(dueDate);
+        when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
+        when(transactionRepository.save(any(BorrowTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        BorrowTransaction renewed = transactionService.renewBorrow("reader", 20L);
+
+        assertEquals(dueDate.plusDays(7), renewed.getDueDate());
+        assertEquals(1, renewed.getRenewalCount());
+        verify(notificationService).notifyUser(1L,
+                "Đã gia hạn sách \"Clean Code\" đến ngày " + dueDate.plusDays(7) + ".");
+    }
+
+    @Test
+    void rejectsRenewalAfterDueDate() {
+        BorrowTransaction transaction = transaction("BORROWED");
+        transaction.setDueDate(LocalDate.now().minusDays(1));
+        when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
+
+        assertThrows(IllegalStateException.class, () -> transactionService.renewBorrow("reader", 20L));
+        verify(transactionRepository, never()).save(any(BorrowTransaction.class));
+    }
+
+    @Test
+    void rejectsRenewalAfterMaximumRenewals() {
+        BorrowTransaction transaction = transaction("BORROWED");
+        transaction.setRenewalCount(2);
+        when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
+
+        assertThrows(IllegalStateException.class, () -> transactionService.renewBorrow("reader", 20L));
+        verify(transactionRepository, never()).save(any(BorrowTransaction.class));
+    }
+
+    @Test
+    void rejectsRenewalByAnotherUser() {
+        BorrowTransaction transaction = transaction("BORROWED");
+        when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
+
+        assertThrows(AccessDeniedException.class,
+                () -> transactionService.renewBorrow("someone-else", 20L));
+        verify(transactionRepository, never()).save(any(BorrowTransaction.class));
+    }
+
+    @Test
+    void borrowResponseIncludesCurrentOverdueFineEstimate() {
+        BorrowTransaction transaction = transaction("BORROWED");
+        transaction.setDueDate(LocalDate.now().minusDays(2));
+
+        BorrowTransactionResponse response = BorrowTransactionResponse.from(transaction);
+
+        assertEquals(10000.0, response.fineAmount());
+        assertEquals(0, response.renewalCount());
+    }
+
+    @Test
     void onlyOwnerCanCancelPendingRequestAndInventoryIsReleased() {
         BorrowTransaction transaction = transaction("PENDING");
         when(transactionRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(transaction));
@@ -158,6 +235,9 @@ class BorrowTransactionServiceTest {
         transaction.setUser(user);
         transaction.setBook(book);
         transaction.setStatus(status);
+        transaction.setDueDate(LocalDate.now().plusDays(5));
+        transaction.setFineAmount(0.0);
+        transaction.setRenewalCount(0);
         return transaction;
     }
 }
