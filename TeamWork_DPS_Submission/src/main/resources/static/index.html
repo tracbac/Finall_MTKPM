@@ -204,6 +204,11 @@
             background: rgba(255,254,250,.91); color: var(--green); font-size: 9px; font-weight: 750;
         }
         .availability.unavailable { color: #9a574a; }
+        .ebook-badge {
+            position: absolute; top: 12px; right: 12px; z-index: 1; padding: 6px 9px; border-radius: 999px;
+            background: #2e7d32; color: #fff; font-size: 9px; font-weight: 750;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
         .card-content { padding: 15px 15px 14px; }
         .book-category { display: block; overflow: hidden; margin-bottom: 8px; color: #829087; font-size: 9px; font-weight: 700; letter-spacing: .9px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
         .book-title { display: -webkit-box; min-height: 43px; overflow: hidden; margin: 0 0 5px; font-family: "Merriweather", Georgia, serif; font-size: 17px; font-weight: 600; line-height: 1.25; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -457,6 +462,7 @@
                 <h2 id="dialog-title"></h2>
                 <p class="dialog-author" id="dialog-author"></p>
                 <dl class="detail-list" id="detail-list">
+                    <div class="detail-row"><dt>Hình thức</dt><dd id="dialog-format"></dd></div>
                     <div class="detail-row"><dt>Tình trạng</dt><dd id="dialog-stock"></dd></div>
                     <div class="detail-row"><dt>Giá mượn</dt><dd id="dialog-rental"></dd></div>
                     <div class="detail-row"><dt>Giá bìa</dt><dd id="dialog-cover-price"></dd></div>
@@ -602,11 +608,14 @@
                     cover.append(image);
                 }
                 if (!className) {
-                    const inStock = Number(book.quantity) > 0;
+                    const inStock = Number(book.quantity) > 0 || Boolean(book.hasEBook);
                     const badge = makeElement("span",
                         `availability${inStock ? "" : " unavailable"}`,
                         inStock ? "Có thể mượn" : "Tạm hết");
                     cover.append(badge);
+                    if (book.hasEBook) {
+                        cover.append(makeElement("span", "ebook-badge", "E-Book"));
+                    }
                 }
                 return cover;
             }
@@ -674,14 +683,24 @@
                 document.getElementById("dialog-category").textContent = book.category || "Chưa phân loại";
                 document.getElementById("dialog-title").textContent = book.title || "Chưa có tên sách";
                 document.getElementById("dialog-author").textContent = book.author || "Tác giả chưa cập nhật";
-                document.getElementById("dialog-stock").textContent = Number(book.quantity) > 0
-                    ? `Còn ${numberFormat.format(Number(book.quantity))} quyển`
-                    : "Tạm hết";
+                const formatEl = document.getElementById("dialog-format");
+                if (formatEl) {
+                    formatEl.textContent = book.hasEBook
+                        ? (Number(book.quantity) > 0 ? "Sách in & E-Book PDF" : "E-Book PDF")
+                        : "Sách in";
+                }
+                if (Number(book.quantity) > 0) {
+                    document.getElementById("dialog-stock").textContent = `Còn ${numberFormat.format(Number(book.quantity))} quyển`;
+                } else if (book.hasEBook) {
+                    document.getElementById("dialog-stock").textContent = "Bản quyền số (Không giới hạn)";
+                } else {
+                    document.getElementById("dialog-stock").textContent = "Tạm hết";
+                }
                 document.getElementById("dialog-rental").textContent = formatPrice(book.rentalPrice);
                 document.getElementById("dialog-cover-price").textContent = formatPrice(book.coverPrice);
                 document.getElementById("detail-list").hidden = false;
                 const hasToken = Boolean(sessionStorage.getItem("library.token"));
-                const canBorrow = Number(book.quantity) > 0;
+                const canBorrow = Number(book.quantity) > 0 || Boolean(book.hasEBook);
                 document.getElementById("dialog-hint").textContent = canBorrow
                     ? "Yêu cầu mượn sẽ chờ thư viện duyệt trước khi được xác nhận."
                     : "Sách hiện đã hết. Bạn có thể kiểm tra lại sau.";

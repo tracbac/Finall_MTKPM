@@ -108,6 +108,9 @@
         .status.pending { background: #fbf1df; color: var(--amber); }
         .status.borrowed { background: #e9f0e9; color: var(--green); }
         .status.returned, .status.rejected, .status.canceled { background: #f0f1ed; color: #7d867e; }
+        .tag-pill { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700; }
+        .tag-pill.ebook { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .tag-pill.paper { background: #efebe9; color: #5d4037; border: 1px solid #d7ccc8; }
         .empty, .loading, .error-state { padding: 40px 18px; color: var(--muted); text-align: center; font-size: 11px; }
         .error-state { color: var(--red); }
         .notice { margin-bottom: 15px; padding: 12px 14px; border: 1px solid #d5e5d7; border-radius: 8px; background: #f0f7ef; color: var(--green); font-size: 10px; line-height: 1.5; }
@@ -198,12 +201,10 @@
             <nav class="side-nav" aria-label="Điều hướng quản trị">
                 <button class="nav-button active" type="button" data-view="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg>Tổng quan</button>
                 <button class="nav-button" type="button" data-view="books"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 5.5v12M8 7h8M8 10h7"/></svg>Kho sách</button>
-                <button class="nav-button" type="button" data-view="borrows"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10v18l-5-3-5 3z"/><path d="M9.5 8h5M9.5 11h5"/></svg>Yêu cầu mượn <span class="nav-count" id="pending-count">0</span></button>
+                <button class="nav-button" type="button" data-view="borrows"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10v18l-5-3-5 3z"/><path d="M9.5 8h5M9.5 11h5"/></svg>Quản lý mượn &amp; DRM <span class="nav-count" id="pending-count">0</span></button>
                 <button class="nav-button" type="button" data-view="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1.5A5.5 5.5 0 0 1 8 13h2a5.5 5.5 0 0 1 5.5 5.5V20M17 5a3.5 3.5 0 0 1 0 6.8M18 14a5 5 0 0 1 3.5 4.8V20"/></svg>Tài khoản</button>
                 <button class="nav-button" type="button" data-view="integrations"><span class="quick-icon">G</span>Google Books</button>
-                <button class="nav-button" type="button" data-view="ebooks"><span class="quick-icon">e</span>E-Book &amp; DRM</button>
                 <button class="nav-button" type="button" data-view="notifications"><span class="quick-icon">N</span>Thông báo</button>
-                <button class="nav-button" type="button" data-view="reports"><span class="quick-icon">✓</span>Kiểm thử &amp; báo cáo</button>
             </nav>
             <div class="side-bottom">
                 <a class="side-link" href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 18l-6-6 6-6M9 12h12"/></svg>Quay lại trang chủ</a>
@@ -241,21 +242,58 @@
                     </section>
                 </section>
                 <section class="view" id="view-borrows" hidden>
-                    <div class="page-heading"><div><p class="eyebrow">Mượn và trả</p><h1>Yêu cầu mượn sách</h1><p class="subtitle">Duyệt yêu cầu, từ chối hoặc xác nhận trả sách.</p></div></div>
-                    <section class="panel"><div class="panel-heading"><div><h2>Tất cả giao dịch</h2><p>Luồng mượn cũ; gia hạn và phí của module mới ở bảng bên dưới.</p></div><select class="filter" id="borrow-filter" aria-label="Lọc trạng thái"><option value="">Tất cả trạng thái</option><option value="PENDING">Chờ duyệt</option><option value="BORROWED">Đang mượn</option><option value="RETURNED">Đã trả</option><option value="REJECTED">Từ chối</option><option value="CANCELED">Đã hủy</option></select></div>
-                        <div class="table-wrap"><table><thead><tr><th>Độc giả</th><th>Sách</th><th>Ngày yêu cầu</th><th>Hạn trả</th><th>Trạng thái</th><th>Phí quá hạn</th><th>Thao tác</th></tr></thead><tbody id="borrows-table"><tr><td colspan="7" class="loading">Đang tải yêu cầu...</td></tr></tbody></table></div>
-                    </section>
-                    <section class="panel" style="margin-top:16px">
-                        <div class="panel-heading"><div><h2>Vòng đời mượn mới</h2><p>Giao dịch từ module Loan, gia hạn và phí quá hạn.</p></div><div class="table-tools"><button class="secondary-button" id="check-overdue-button" type="button">Rà soát quá hạn</button><button class="secondary-button" id="refresh-loans-button" type="button">Tải lại</button></div></div>
-                        <div class="notice" id="loan3-notice" role="status" aria-live="polite" hidden></div>
-                        <form id="loan3-form"><div class="form-grid">
-                            <div class="field"><label for="loan3-user">Thành viên</label><select id="loan3-user" name="userId" required><option value="">Đang tải thành viên...</option></select></div>
-                            <div class="field"><label for="loan3-book">Sách</label><select id="loan3-book" name="bookId" required><option value="">Đang tải sách...</option></select></div>
-                            <div class="field"><label for="loan3-days">Số ngày mượn</label><input id="loan3-days" name="loanDays" type="number" min="1" value="14"></div>
-                            <div class="field"><button class="primary-button" id="loan3-submit" type="submit">Tạo giao dịch mượn</button></div>
-                        </div></form>
-                        <div class="table-wrap"><table><thead><tr><th>Độc giả</th><th>Sách</th><th>Ngày mượn</th><th>Hạn trả</th><th>Trạng thái</th><th>Phí</th><th>Thao tác</th></tr></thead><tbody id="loans3-table"><tr><td colspan="7" class="loading">Đang tải giao dịch...</td></tr></tbody></table></div>
-                    </section>
+                    <div class="page-heading"><div><p class="eyebrow">Quản lý mượn &amp; Bản quyền</p><h1>Quản lý Mượn &amp; DRM</h1><p class="subtitle">Duyệt mượn sách in tại quầy và xử lý yêu cầu cấp phép E-Book DRM.</p></div></div>
+                    
+                    <!-- Thanh Tab chuyển đổi giữa Sách in và E-Book DRM -->
+                    <div class="subtabs-bar" style="display:flex;gap:12px;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:12px;flex-wrap:wrap">
+                        <button class="subtab-btn active" id="subtab-btn-physical" type="button" style="display:inline-flex;align-items:center;padding:9px 18px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:#fff;font-weight:700;font-size:12px;cursor:pointer;transition:.15s ease">
+                            📖 Mượn sách in (Tại quầy) <span class="tag-pill paper" id="subtab-physical-count" style="margin-left:8px;background:#fff;color:var(--green);font-size:11px">0</span>
+                        </button>
+                        <button class="subtab-btn" id="subtab-btn-ebook" type="button" style="display:inline-flex;align-items:center;padding:9px 18px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-weight:700;font-size:12px;cursor:pointer;transition:.15s ease">
+                            💻 Yêu cầu E-Book &amp; Cấp DRM <span class="tag-pill ebook" id="subtab-ebook-count" style="margin-left:8px;font-size:11px">0</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: SÁCH IN -->
+                    <div id="subtab-pane-physical">
+                        <section class="panel"><div class="panel-heading"><div><h2>Tất cả giao dịch mượn sách in</h2><p>Duyệt yêu cầu, từ chối hoặc xác nhận nhận lại sách.</p></div><select class="filter" id="borrow-filter" aria-label="Lọc trạng thái"><option value="">Tất cả trạng thái</option><option value="PENDING">Chờ duyệt</option><option value="BORROWED">Đang mượn</option><option value="RETURNED">Đã trả</option><option value="REJECTED">Từ chối</option><option value="CANCELED">Đã hủy</option></select></div>
+                            <div class="table-wrap"><table><thead><tr><th>Độc giả</th><th>Sách</th><th>Ngày yêu cầu</th><th>Hạn trả</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="borrows-table"><tr><td colspan="6" class="loading">Đang tải yêu cầu...</td></tr></tbody></table></div>
+                        </section>
+                        <section class="panel" style="margin-top:16px">
+                            <div class="panel-heading"><div><h2>Vòng đời mượn &amp; Gia hạn</h2><p>Giao dịch từ module Loan và gia hạn thời gian mượn.</p></div><div class="table-tools"><button class="secondary-button" id="refresh-loans-button" type="button">Tải lại</button></div></div>
+                            <div class="notice" id="loan3-notice" role="status" aria-live="polite" hidden></div>
+                            <form id="loan3-form"><div class="form-grid">
+                                <div class="field"><label for="loan3-user">Thành viên</label><select id="loan3-user" name="userId" required><option value="">Đang tải thành viên...</option></select></div>
+                                <div class="field"><label for="loan3-book">Sách</label><select id="loan3-book" name="bookId" required><option value="">Đang tải sách...</option></select></div>
+                                <div class="field"><label for="loan3-days">Số ngày mượn</label><input id="loan3-days" name="loanDays" type="number" min="1" value="14"></div>
+                                <div class="field"><button class="primary-button" id="loan3-submit" type="submit">Tạo giao dịch mượn</button></div>
+                            </div></form>
+                            <div class="table-wrap"><table><thead><tr><th>Độc giả</th><th>Sách</th><th>Ngày mượn</th><th>Hạn trả</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="loans3-table"><tr><td colspan="6" class="loading">Đang tải giao dịch...</td></tr></tbody></table></div>
+                        </section>
+                    </div>
+
+                    <!-- TAB 2: E-BOOK & DRM -->
+                    <div id="subtab-pane-ebook" hidden>
+                        <section class="panel">
+                            <div class="panel-heading"><div><h2>Yêu cầu mượn E-Book (Cần duyệt &amp; Cấp DRM)</h2><p id="ebook-request-count">Đang tải yêu cầu...</p></div><button class="secondary-button" id="refresh-ebook-requests" type="button">Tải lại</button></div>
+                            <div class="notice" id="ebook-admin-notice" role="status" aria-live="polite" hidden></div>
+                            <div class="table-wrap"><table><thead><tr><th>Thành viên</th><th>Sách</th><th>Ngày gửi</th><th>Trạng thái</th><th>Phản hồi</th><th>Giấy phép</th><th>Thao tác</th></tr></thead><tbody id="ebook-requests-admin-table"><tr><td class="loading" colspan="7">Đang tải yêu cầu...</td></tr></tbody></table></div>
+                        </section>
+                        <section class="panel" style="margin-top:16px">
+                            <div class="panel-heading"><div><h2>Cấp bản quyền DRM thủ công</h2><p>Chủ động chọn thành viên và đầu sách để tạo giấy phép.</p></div></div>
+                            <div class="notice" id="drm-notice" role="status" aria-live="polite" hidden></div>
+                            <form id="drm-form"><div class="form-grid">
+                                <div class="field"><label for="drm-user">Thành viên</label><select id="drm-user" name="userId" required><option value="">Đang tải thành viên...</option></select></div>
+                                <div class="field"><label for="drm-book">Sách</label><select id="drm-book" name="bookId" required><option value="">Đang tải sách...</option></select></div>
+                                <div class="field"><label for="drm-valid-days">Thời hạn (ngày)</label><input id="drm-valid-days" name="validDays" type="number" min="1" value="30"></div>
+                                <div class="field"><label for="drm-download-limit">Lượt tải tối đa</label><input id="drm-download-limit" name="maxDownloads" type="number" min="1" value="3"></div>
+                            </div><div class="form-actions"><button class="primary-button" id="drm-submit" type="submit">Cấp giấy phép</button></div></form>
+                        </section>
+                        <section class="panel" style="margin-top:16px">
+                            <div class="panel-heading"><div><h2>Giấy phép DRM đã cấp</h2><p id="drm-count">Chọn thành viên để xem giấy phép.</p></div><button class="secondary-button" id="refresh-licenses-button" type="button">Tải lại</button></div>
+                            <div class="table-wrap"><table><thead><tr><th>Thành viên</th><th>Sách</th><th>Mã giấy phép</th><th>Hạn dùng</th><th>Lượt tải</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="licenses-table"><tr><td class="empty" colspan="7">Chọn thành viên để xem giấy phép.</td></tr></tbody></table></div>
+                        </section>
+                    </div>
                 </section>
                 <section class="view" id="view-users" hidden>
                     <div class="page-heading"><div><p class="eyebrow">Thành viên</p><h1>Quản lý tài khoản</h1><p class="subtitle">Tạo tài khoản thành viên hoặc quản trị viên mới.</p></div></div>
@@ -275,7 +313,7 @@
                                 <div class="field"><label for="account-search">Tìm tài khoản</label><input id="account-search" type="search" placeholder="Tên đăng nhập hoặc email" autocomplete="off"></div>
                                 <div class="field"><label for="account-role-filter">Lọc theo vai trò</label><select id="account-role-filter"><option value="">Tất cả vai trò</option><option value="USER">Thành viên</option><option value="ADMIN">Quản trị viên</option></select></div>
                             </div>
-                            <div class="table-wrap"><table><thead><tr><th>Mã</th><th>Tên đăng nhập</th><th>Email</th><th>Vai trò</th></tr></thead><tbody id="accounts-table"><tr><td colspan="4" class="loading">Đang tải tài khoản...</td></tr></tbody></table></div>
+                            <div class="table-wrap"><table><thead><tr><th>Mã</th><th>Tên đăng nhập</th><th>Email</th><th>Vai trò</th><th>Thao tác</th></tr></thead><tbody id="accounts-table"><tr><td colspan="5" class="loading">Đang tải tài khoản...</td></tr></tbody></table></div>
                         </section>
                     </div>
                 </section>
@@ -354,34 +392,7 @@
                         </div>
                     </section>
                 </section>
-                <section class="view" id="view-ebooks" hidden>
-                    <div class="page-heading"><div><p class="eyebrow">Ấn bản số</p><h1>E-Book &amp; bản quyền số</h1><p class="subtitle">Cấp và thu hồi quyền DRM qua module thành viên.</p></div></div>
-                    <div class="feature-grid">
-                        <article class="feature-card"><span class="feature-icon">e</span><h3>Kho E-Book</h3><p>API kiểm soát yêu cầu tải đã có; tải tệp thật chưa khả dụng vì thiếu endpoint stream.</p><span class="unavailable-badge">Tải tệp chưa khả dụng</span></article>
-                        <article class="feature-card"><span class="feature-icon">©</span><h3>Quản lý bản quyền</h3><p>Cấp thời hạn và số lượt tải cho từng thành viên.</p><span class="status borrowed">Đã kết nối API</span></article>
-                        <article class="feature-card"><span class="feature-icon">DRM</span><h3>Bảo vệ nội dung</h3><p>Thu hồi quyền truy cập khi cần thiết.</p><span class="status borrowed">Đã kết nối API</span></article>
-                    </div>
-                    <section class="panel" style="margin-top:16px">
-                        <div class="panel-heading"><div><h2>Yêu cầu mượn E-Book</h2><p id="ebook-request-count">Đang tải yêu cầu...</p></div><button class="secondary-button" id="refresh-ebook-requests" type="button">Tải lại</button></div>
-                        <div class="notice" id="ebook-admin-notice" role="status" aria-live="polite" hidden></div>
-                        <div class="table-wrap"><table><thead><tr><th>Thành viên</th><th>Sách</th><th>Ngày gửi</th><th>Trạng thái</th><th>Phản hồi</th><th>Giấy phép</th><th>Thao tác</th></tr></thead><tbody id="ebook-requests-admin-table"><tr><td class="loading" colspan="7">Đang tải yêu cầu...</td></tr></tbody></table></div>
-                    </section>
-                    <section class="panel" style="margin-top:16px">
-                        <div class="panel-heading"><div><h2>Cấp bản quyền DRM</h2><p>Chọn thành viên và đầu sách để tạo giấy phép.</p></div></div>
-                        <div class="notice" id="drm-notice" role="status" aria-live="polite" hidden></div>
-                        <form id="drm-form"><div class="form-grid">
-                            <div class="field"><label for="drm-user">Thành viên</label><select id="drm-user" name="userId" required><option value="">Đang tải thành viên...</option></select></div>
-                            <div class="field"><label for="drm-book">Sách</label><select id="drm-book" name="bookId" required><option value="">Đang tải sách...</option></select></div>
-                            <div class="field"><label for="drm-valid-days">Thời hạn (ngày)</label><input id="drm-valid-days" name="validDays" type="number" min="1" value="30"></div>
-                            <div class="field"><label for="drm-download-limit">Lượt tải tối đa</label><input id="drm-download-limit" name="maxDownloads" type="number" min="1" value="3"></div>
-                        </div><div class="form-actions"><button class="primary-button" id="drm-submit" type="submit">Cấp giấy phép</button></div></form>
-                    </section>
-                    <section class="panel" style="margin-top:16px">
-                        <div class="panel-heading"><div><h2>Giấy phép DRM</h2><p id="drm-count">Chọn thành viên để xem giấy phép.</p></div><button class="secondary-button" id="refresh-licenses-button" type="button">Tải lại</button></div>
-                        <div class="table-wrap"><table><thead><tr><th>Thành viên</th><th>Sách</th><th>Mã giấy phép</th><th>Hạn dùng</th><th>Lượt tải</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="licenses-table"><tr><td class="empty" colspan="7">Chọn thành viên để xem giấy phép.</td></tr></tbody></table></div>
-                        <p class="hint">API tải hiện trả URL stream nhưng chưa có endpoint phục vụ tệp; chưa thể tải E-Book thật.</p>
-                    </section>
-                </section>
+                <section class="view" id="view-ebooks" hidden></section>
                 <section class="view" id="view-notifications" hidden>
                     <div class="page-heading"><div><p class="eyebrow">Cập nhật hoạt động</p><h1>Thông báo</h1><p class="subtitle">Gửi thông báo trong ứng dụng và xem lịch sử gần đây.</p></div></div>
                     <section class="panel">
@@ -407,25 +418,18 @@
                         </div>
                     </section>
                     <section class="panel" style="margin-top:16px">
-                        <div class="panel-heading"><div><h2>Lịch sử thông báo</h2><p id="notification-history-count">Đang tải...</p></div><button class="secondary-button" id="refresh-notifications" type="button">Tải lại</button></div>
+                        <div class="panel-heading">
+                            <div><h2>Lịch sử thông báo</h2><p id="notification-history-count">Đang tải...</p></div>
+                            <div style="display:flex;gap:8px">
+                                <button class="secondary-button" id="mark-all-admin-notifications-read" type="button">Đánh dấu tất cả đã đọc</button>
+                                <button class="secondary-button" id="refresh-notifications" type="button">Tải lại</button>
+                            </div>
+                        </div>
                         <div class="table-wrap">
-                            <table><thead><tr><th>Người nhận</th><th>Nội dung</th><th>Thời gian</th><th>Trạng thái</th></tr></thead>
-                                <tbody id="notifications-table"><tr><td class="loading" colspan="4">Đang tải thông báo...</td></tr></tbody>
+                            <table><thead><tr><th>Người nhận</th><th>Nội dung</th><th>Thời gian</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                                <tbody id="notifications-table"><tr><td class="loading" colspan="5">Đang tải thông báo...</td></tr></tbody>
                             </table>
                         </div>
-                    </section>
-                </section>
-                <section class="view" id="view-reports" hidden>
-                    <div class="page-heading"><div><p class="eyebrow">Chất lượng phần mềm</p><h1>Kiểm thử &amp; báo cáo</h1><p class="subtitle">Khung tổng hợp kết quả kiểm thử và tình trạng chất lượng.</p></div><span class="unavailable-badge">Chưa khả dụng</span></div>
-                    <div class="stats-grid">
-                        <article class="stat-card"><span class="stat-label">Lần chạy gần nhất</span><strong class="metric-placeholder">Chưa có dữ liệu</strong><span class="stat-foot">Chưa có API báo cáo</span></article>
-                        <article class="stat-card"><span class="stat-label">Kiểm thử đạt</span><strong class="metric-placeholder">—</strong><span class="stat-foot">Chưa khả dụng</span></article>
-                        <article class="stat-card"><span class="stat-label">Kiểm thử lỗi</span><strong class="metric-placeholder">—</strong><span class="stat-foot">Chưa khả dụng</span></article>
-                        <article class="stat-card"><span class="stat-label">Độ bao phủ</span><strong class="metric-placeholder">—</strong><span class="stat-foot">Chưa khả dụng</span></article>
-                    </div>
-                    <section class="panel"><div class="panel-heading"><div><h2>Báo cáo kiểm thử</h2><p>Chưa có giao diện nhận, lưu hoặc xuất báo cáo tự động.</p></div></div>
-                        <div class="unavailable-controls"><input type="date" disabled aria-label="Ngày bắt đầu chưa khả dụng"><input type="date" disabled aria-label="Ngày kết thúc chưa khả dụng"><button type="button" disabled>Xuất báo cáo</button></div>
-                        <div class="unavailable" style="margin-top:16px"><strong>Chưa khả dụng</strong><p>Chạy test và xem kết quả trong Maven/VS Code. Bảng này chưa kết nối đến hệ thống kiểm thử hoặc báo cáo.</p></div>
                     </section>
                 </section>
             </main>
@@ -434,15 +438,55 @@
     <dialog id="book-dialog" aria-labelledby="book-dialog-title">
         <div class="dialog-head"><h2 id="book-dialog-title">Thêm sách</h2><button class="dialog-close" type="button" id="close-book-dialog" aria-label="Đóng">×</button></div>
         <div class="dialog-body"><div class="notice" id="book-notice" role="status" aria-live="polite" hidden></div>
-            <form id="book-form"><input id="book-id" name="id" type="hidden"><div class="form-grid">
+            <form id="book-form"><input id="book-id" name="id" type="hidden"><input id="book-image-url" name="imageUrl" type="hidden"><div class="form-grid">
                 <div class="field full"><label for="book-title">Tên sách</label><input id="book-title" name="title" required maxlength="255"></div>
                 <div class="field"><label for="book-author">Tác giả / Nhà xuất bản</label><input id="book-author" name="author" required maxlength="255"></div>
                 <div class="field"><label for="book-category">Thể loại</label><input id="book-category" name="category" maxlength="100"></div>
-                <div class="field"><label for="book-quantity">Số lượng</label><input id="book-quantity" name="quantity" type="number" min="0" step="1" required></div>
+                <div class="field"><label for="book-quantity">Số lượng sách in</label><input id="book-quantity" name="quantity" type="number" min="0" step="1" required><small id="quantity-field-hint" style="display:block;font-size:11px;color:#888;margin-top:4px"></small></div>
                 <div class="field"><label for="book-rental-price">Giá mượn mỗi ngày (đ)</label><input id="book-rental-price" name="rentalPrice" type="number" min="0" step="0.01" required></div>
                 <div class="field"><label for="book-cover-price">Giá bìa (đ)</label><input id="book-cover-price" name="coverPrice" type="number" min="0" step="0.01" required></div>
-                <div class="field"><label for="book-image">Ảnh bìa</label><input id="book-image" name="imageFile" type="file" accept="image/*"></div>
+                <div class="field"><label for="book-item-type">Hình thức ấn bản</label><select id="book-item-type" name="itemType"><option value="BOTH">Cả hai (Sách giấy + E-Book)</option><option value="PHYSICAL">Sách giấy (mượn tại quầy)</option><option value="EBOOK">E-Book (tải PDF &amp; bản quyền DRM)</option></select></div>
+                <div class="field full"><label for="book-image">Ảnh bìa</label><input id="book-image" name="imageFile" type="file" accept="image/*"></div>
             </div><p class="hint" id="image-hint">Chọn tệp ảnh nếu muốn thêm bìa sách.</p><div class="form-actions"><button class="secondary-button" type="button" id="cancel-book">Hủy</button><button class="primary-button" id="book-submit" type="submit">Lưu sách</button></div></form>
+        </div>
+    </dialog>
+
+    <!-- Dialog Xem chi tiết tài khoản -->
+    <dialog id="user-detail-dialog" aria-labelledby="user-detail-title">
+        <div class="dialog-head"><h2 id="user-detail-title">Thông tin tài khoản</h2><button class="dialog-close" type="button" id="close-user-detail-dialog" aria-label="Đóng">×</button></div>
+        <div class="dialog-body">
+            <div id="user-detail-loading" class="notice">Đang tải chi tiết tài khoản...</div>
+            <div id="user-detail-content" hidden>
+                <dl class="detail-list" style="display:grid;grid-template-columns:130px 1fr;gap:10px 16px;font-size:13px;margin-bottom:16px">
+                    <dt style="color:#777">Mã thành viên</dt><dd id="ud-id" style="font-weight:600"></dd>
+                    <dt style="color:#777">Tên đăng nhập</dt><dd id="ud-username" style="font-weight:600"></dd>
+                    <dt style="color:#777">Email</dt><dd id="ud-email" style="font-weight:500"></dd>
+                    <dt style="color:#777">Vai trò</dt><dd id="ud-role"></dd>
+                    <dt style="color:#777">Sách đang mượn</dt><dd id="ud-active-loans" style="font-weight:600;color:#2e563b"></dd>
+                    <dt style="color:#777">Tổng lượt mượn</dt><dd id="ud-total-borrows"></dd>
+                    <dt style="color:#777">Giấy phép E-Book</dt><dd id="ud-active-drm" style="font-weight:600;color:#1e6091"></dd>
+                </dl>
+            </div>
+            <div class="form-actions"><button class="primary-button" type="button" id="close-user-detail-btn">Đóng</button></div>
+        </div>
+    </dialog>
+
+    <!-- Dialog Sửa tài khoản -->
+    <dialog id="user-edit-dialog" aria-labelledby="user-edit-title">
+        <div class="dialog-head"><h2 id="user-edit-title">Chỉnh sửa tài khoản</h2><button class="dialog-close" type="button" id="close-user-edit-dialog" aria-label="Đóng">×</button></div>
+        <div class="dialog-body">
+            <div class="notice" id="user-edit-notice" role="status" aria-live="polite" hidden></div>
+            <form id="user-edit-form">
+                <input id="edit-user-id" type="hidden">
+                <div class="form-grid">
+                    <div class="field"><label for="edit-user-username">Tên đăng nhập</label><input id="edit-user-username" required maxlength="50" autocomplete="off"></div>
+                    <div class="field"><label for="edit-user-email">Email</label><input id="edit-user-email" type="email" required maxlength="254"></div>
+                    <div class="field"><label for="edit-user-role">Vai trò</label><select id="edit-user-role"><option value="USER">Thành viên</option><option value="ADMIN">Quản trị viên</option></select></div>
+                    <div class="field"><label for="edit-user-password">Đặt lại mật khẩu</label><input id="edit-user-password" type="password" placeholder="Để trống nếu không đổi mật khẩu" autocomplete="new-password"></div>
+                </div>
+                <p class="hint">Để trống ô "Đặt lại mật khẩu" nếu muốn giữ nguyên mật khẩu hiện tại.</p>
+                <div class="form-actions"><button class="secondary-button" type="button" id="cancel-user-edit">Hủy</button><button class="primary-button" id="user-edit-submit" type="submit">Lưu thay đổi</button></div>
+            </form>
         </div>
     </dialog>
     <script>
@@ -455,16 +499,15 @@
                 return;
             }
 
-            const views = ["overview", "books", "borrows", "users", "integrations", "ebooks", "notifications", "reports"];
+            const views = ["overview", "books", "borrows", "users", "integrations", "ebooks", "notifications"];
             const labels = {
                 overview: "Tổng quan",
                 books: "Kho sách",
-                borrows: "Yêu cầu mượn",
+                borrows: "Mượn sách & DRM",
                 users: "Tài khoản",
                 integrations: "Google Books",
-                ebooks: "E-Book & DRM",
-                notifications: "Thông báo",
-                reports: "Kiểm thử & báo cáo"
+                ebooks: "Mượn sách & DRM",
+                notifications: "Thông báo"
             };
             const numberFormat = new Intl.NumberFormat("vi-VN");
             const bookDialog = document.getElementById("book-dialog");
@@ -477,6 +520,47 @@
             let notificationUsers = [];
             let adminNotifications = [];
             let activeView = "overview";
+            let physicalPendingCount = 0;
+            let ebookPendingCount = 0;
+
+            function updateTotalPendingCount() {
+                const total = physicalPendingCount + ebookPendingCount;
+                const badge = document.getElementById("pending-count");
+                if (badge) badge.textContent = total;
+                const statPending = document.getElementById("stat-pending");
+                if (statPending) statPending.textContent = total;
+            }
+
+            const subtabPhysical = document.getElementById("subtab-btn-physical");
+            const subtabEbook = document.getElementById("subtab-btn-ebook");
+            const panePhysical = document.getElementById("subtab-pane-physical");
+            const paneEbook = document.getElementById("subtab-pane-ebook");
+
+            if (subtabPhysical && subtabEbook) {
+                subtabPhysical.addEventListener("click", () => {
+                    subtabPhysical.style.border = "1px solid var(--green)";
+                    subtabPhysical.style.background = "var(--green)";
+                    subtabPhysical.style.color = "#fff";
+                    subtabEbook.style.border = "1px solid var(--line)";
+                    subtabEbook.style.background = "var(--paper)";
+                    subtabEbook.style.color = "var(--ink)";
+                    if (panePhysical) panePhysical.hidden = false;
+                    if (paneEbook) paneEbook.hidden = true;
+                });
+                subtabEbook.addEventListener("click", () => {
+                    subtabEbook.style.border = "1px solid var(--green)";
+                    subtabEbook.style.background = "var(--green)";
+                    subtabEbook.style.color = "#fff";
+                    subtabPhysical.style.border = "1px solid var(--line)";
+                    subtabPhysical.style.background = "var(--paper)";
+                    subtabPhysical.style.color = "var(--ink)";
+                    if (panePhysical) panePhysical.hidden = true;
+                    if (paneEbook) paneEbook.hidden = false;
+                    populateBookOptions();
+                    loadDrmUsers();
+                    loadEBookRequests();
+                });
+            }
 
             document.getElementById("profile-name").textContent = username || "Quản trị viên";
             document.getElementById("profile-avatar").textContent = (username || "A").slice(0, 1).toUpperCase();
@@ -487,7 +571,13 @@
             document.getElementById("book-search").addEventListener("input", renderBooks);
             document.getElementById("borrow-filter").addEventListener("change", renderBorrows);
             document.getElementById("book-form").addEventListener("submit", saveBook);
+            document.getElementById("book-item-type")?.addEventListener("change", updateQuantityFieldState);
             document.getElementById("user-form").addEventListener("submit", createUser);
+            document.getElementById("user-edit-form")?.addEventListener("submit", saveUserEdit);
+            document.getElementById("close-user-detail-dialog")?.addEventListener("click", () => document.getElementById("user-detail-dialog").close());
+            document.getElementById("close-user-detail-btn")?.addEventListener("click", () => document.getElementById("user-detail-dialog").close());
+            document.getElementById("close-user-edit-dialog")?.addEventListener("click", () => document.getElementById("user-edit-dialog").close());
+            document.getElementById("cancel-user-edit")?.addEventListener("click", () => document.getElementById("user-edit-dialog").close());
             document.getElementById("account-search").addEventListener("input", renderAccounts);
             document.getElementById("account-role-filter").addEventListener("change", renderAccounts);
             document.getElementById("refresh-accounts").addEventListener("click", loadAccounts);
@@ -497,9 +587,22 @@
             document.getElementById("drm-user").addEventListener("change", loadLicenses);
             document.getElementById("refresh-licenses-button").addEventListener("click", loadLicenses);
             document.getElementById("refresh-loans-button").addEventListener("click", loadLoans3);
-            document.getElementById("check-overdue-button").addEventListener("click", checkOverdue);
+            document.getElementById("check-overdue-button")?.addEventListener("click", checkOverdue);
             document.getElementById("notification-form").addEventListener("submit", sendNotification);
             document.getElementById("refresh-notifications").addEventListener("click", loadAdminNotifications);
+            document.getElementById("mark-all-admin-notifications-read")?.addEventListener("click", async () => {
+                const btn = document.getElementById("mark-all-admin-notifications-read");
+                btn.disabled = true;
+                try {
+                    await api("/api/notifications/admin/read-all", { method: "PATCH" });
+                    adminNotifications.forEach(n => n.isRead = true);
+                    renderAdminNotifications();
+                } catch (e) {
+                    alert(e.message);
+                } finally {
+                    btn.disabled = false;
+                }
+            });
             document.querySelectorAll(".nav-button[data-view]").forEach(button =>
                 button.addEventListener("click", () => showView(button.dataset.view)));
             document.querySelectorAll("[data-go]").forEach(button =>
@@ -554,9 +657,17 @@
             }
 
             function showView(name) {
+                if (name === "ebooks") {
+                    showView("borrows");
+                    document.getElementById("subtab-btn-ebook")?.click();
+                    return;
+                }
                 if (!views.includes(name)) return;
                 activeView = name;
-                views.forEach(view => { document.getElementById(`view-${view}`).hidden = view !== name; });
+                views.forEach(view => {
+                    const el = document.getElementById(`view-${view}`);
+                    if (el) el.hidden = view !== name;
+                });
                 document.querySelectorAll(".nav-button[data-view]").forEach(button =>
                     button.classList.toggle("active", button.dataset.view === name));
                 document.getElementById("breadcrumb-current").textContent = labels[name];
@@ -567,6 +678,9 @@
                     loadBorrows();
                     loadLoans3();
                     loadLoanOptions();
+                    populateBookOptions();
+                    loadDrmUsers();
+                    loadEBookRequests();
                 }
                 if (name === "ebooks") {
                     populateBookOptions();
@@ -618,7 +732,7 @@
             }
 
             async function loadInitialData() {
-                await Promise.all([loadBooks(), loadBorrows()]);
+                await Promise.all([loadBooks(), loadBorrows(), loadEBookRequests().catch(() => {})]);
                 renderOverview();
             }
 
@@ -645,7 +759,7 @@
             async function loadAccounts() {
                 const body = document.getElementById("accounts-table");
                 const count = document.getElementById("account-list-count");
-                body.innerHTML = '<tr><td colspan="4" class="loading">Đang tải tài khoản...</td></tr>';
+                body.innerHTML = '<tr><td colspan="5" class="loading">Đang tải tài khoản...</td></tr>';
                 count.textContent = "Đang tải tài khoản...";
                 try {
                     const data = await api("/api/admin/users");
@@ -658,7 +772,7 @@
                     body.replaceChildren();
                     const row = document.createElement("tr");
                     row.append(makeElement("td", "error-state", error.message));
-                    row.firstElementChild.colSpan = 4;
+                    row.firstElementChild.colSpan = 5;
                     body.append(row);
                 }
             }
@@ -680,7 +794,7 @@
                     : `${accounts.length} tài khoản`;
                 body.replaceChildren();
                 if (!filteredAccounts.length) {
-                    body.innerHTML = `<tr><td colspan="4" class="empty">${
+                    body.innerHTML = `<tr><td colspan="5" class="empty">${
                         accounts.length ? "Không tìm thấy tài khoản phù hợp." : "Chưa có tài khoản nào."
                     }</td></tr>`;
                     return;
@@ -691,18 +805,135 @@
                     const roleLabel = roleValue === "ADMIN" ? "Quản trị viên"
                         : roleValue === "USER" ? "Thành viên" : (account.role || "Chưa xác định");
                     const row = document.createElement("tr");
+
+                    const roleBadge = makeElement("span", `tag-pill ${roleValue === "ADMIN" ? "paper" : "ebook"}`, roleLabel);
+
+                    const actions = makeElement("td", "actions-cell");
+                    const viewBtn = makeElement("button", "small-button", "Xem");
+                    viewBtn.type = "button";
+                    viewBtn.addEventListener("click", () => openUserDetail(account));
+
+                    const editBtn = makeElement("button", "small-button", "Sửa");
+                    editBtn.type = "button";
+                    editBtn.addEventListener("click", () => openUserEdit(account));
+
+                    const deleteBtn = makeElement("button", "small-button danger", "Xóa");
+                    deleteBtn.type = "button";
+                    deleteBtn.addEventListener("click", () => deleteUser(account, deleteBtn));
+
+                    actions.append(viewBtn, editBtn, deleteBtn);
+
+                    const roleTd = document.createElement("td");
+                    roleTd.append(roleBadge);
+
                     row.append(
                         makeElement("td", "", account.id ?? "—"),
                         makeElement("td", "", account.username || "—"),
                         makeElement("td", "", account.email || "—"),
-                        makeElement("td", "", roleLabel));
+                        roleTd,
+                        actions
+                    );
                     body.append(row);
                 });
             }
 
+            async function openUserDetail(account) {
+                const dialog = document.getElementById("user-detail-dialog");
+                const loading = document.getElementById("user-detail-loading");
+                const content = document.getElementById("user-detail-content");
+                loading.hidden = false;
+                loading.textContent = "Đang tải chi tiết tài khoản...";
+                loading.className = "notice";
+                content.hidden = true;
+                dialog.showModal();
+
+                try {
+                    const detail = await api(`/api/admin/users/${encodeURIComponent(account.id)}`);
+                    document.getElementById("ud-id").textContent = `#${detail.id}`;
+                    document.getElementById("ud-username").textContent = detail.username || "—";
+                    document.getElementById("ud-email").textContent = detail.email || "—";
+                    const roleValue = String(detail.role || "").toUpperCase();
+                    document.getElementById("ud-role").textContent = roleValue === "ADMIN" ? "Quản trị viên (ADMIN)" : "Thành viên (USER)";
+                    document.getElementById("ud-active-loans").textContent = `${detail.activeLoans || 0} cuốn sách`;
+                    document.getElementById("ud-total-borrows").textContent = `${detail.totalBorrows || 0} lượt giao dịch`;
+                    document.getElementById("ud-active-drm").textContent = `${detail.activeDrmLicenses || 0} giấy phép có hiệu lực`;
+                    loading.hidden = true;
+                    content.hidden = false;
+                } catch (err) {
+                    loading.textContent = err.message || "Không thể tải thông tin chi tiết.";
+                    loading.className = "notice error";
+                }
+            }
+
+            function openUserEdit(account) {
+                const dialog = document.getElementById("user-edit-dialog");
+                document.getElementById("edit-user-id").value = account.id;
+                document.getElementById("edit-user-username").value = account.username || "";
+                document.getElementById("edit-user-email").value = account.email || "";
+                document.getElementById("edit-user-role").value = String(account.role || "USER").toUpperCase();
+                document.getElementById("edit-user-password").value = "";
+                showInlineNotice("user-edit-notice", "", "");
+                dialog.showModal();
+            }
+
+            async function saveUserEdit(event) {
+                event.preventDefault();
+                const form = event.currentTarget;
+                if (!form.reportValidity()) return;
+                const id = document.getElementById("edit-user-id").value;
+                const usernameVal = document.getElementById("edit-user-username").value.trim();
+                const emailVal = document.getElementById("edit-user-email").value.trim();
+                const roleVal = document.getElementById("edit-user-role").value;
+                const passwordVal = document.getElementById("edit-user-password").value.trim();
+
+                const payload = {
+                    username: usernameVal,
+                    email: emailVal,
+                    role: roleVal,
+                    newPassword: passwordVal || null
+                };
+
+                const button = document.getElementById("user-edit-submit");
+                button.disabled = true;
+                try {
+                    await api(`/api/admin/users/${encodeURIComponent(id)}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    document.getElementById("user-edit-dialog").close();
+                    showNotice(`Đã cập nhật thông tin tài khoản "${usernameVal}" thành công.`, "success");
+                    await loadAccounts();
+                } catch (error) {
+                    showInlineNotice("user-edit-notice", error.message, "error");
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            async function deleteUser(account, button) {
+                const currentUsername = sessionStorage.getItem("library.username");
+                if (currentUsername && account.username && currentUsername.toLowerCase() === account.username.toLowerCase()) {
+                    alert("Bạn không thể tự xóa tài khoản của chính mình!");
+                    return;
+                }
+                if (!window.confirm(`Bạn có chắc chắn muốn xóa tài khoản "${account.username}" (${account.email}) khỏi hệ thống? Hành động này không thể hoàn tác.`)) {
+                    return;
+                }
+                button.disabled = true;
+                try {
+                    await api(`/api/admin/users/${encodeURIComponent(account.id)}`, { method: "DELETE" });
+                    showNotice(`Đã xóa tài khoản "${account.username}" thành công.`, "success");
+                    await loadAccounts();
+                } catch (error) {
+                    button.disabled = false;
+                    alert(error.message || "Không thể xóa tài khoản.");
+                }
+            }
+
             async function loadAdminNotifications() {
                 const body = document.getElementById("notifications-table");
-                body.innerHTML = '<tr><td class="loading" colspan="4">Đang tải thông báo...</td></tr>';
+                body.innerHTML = '<tr><td class="loading" colspan="5">Đang tải thông báo...</td></tr>';
                 try {
                     const data = await api("/api/notifications/admin");
                     if (!Array.isArray(data)) throw new Error("Danh sách thông báo không đúng định dạng.");
@@ -710,7 +941,7 @@
                     renderAdminNotifications();
                 } catch (error) {
                     document.getElementById("notification-history-count").textContent = "Không tải được lịch sử";
-                    body.innerHTML = `<tr><td class="error-state" colspan="4">${escapeHtml(error.message)}</td></tr>`;
+                    body.innerHTML = `<tr><td class="error-state" colspan="5">${escapeHtml(error.message)}</td></tr>`;
                 }
             }
 
@@ -720,17 +951,41 @@
                     `${adminNotifications.length} thông báo gần đây`;
                 body.replaceChildren();
                 if (!adminNotifications.length) {
-                    body.innerHTML = '<tr><td class="empty" colspan="4">Chưa có thông báo nào.</td></tr>';
+                    body.innerHTML = '<tr><td class="empty" colspan="5">Chưa có thông báo nào.</td></tr>';
                     return;
                 }
                 adminNotifications.forEach(notification => {
                     const recipient = notificationUsers.find(user => Number(user.id) === Number(notification.userId));
                     const row = document.createElement("tr");
+                    const statusCell = document.createElement("td");
+                    statusCell.append(makeElement("span", `status ${notification.isRead ? "returned" : "pending"}`, notification.isRead ? "Đã đọc" : "Chưa đọc"));
+                    const actionsCell = document.createElement("td");
+                    actionsCell.className = "actions-cell";
+                    if (!notification.isRead) {
+                        const readBtn = makeElement("button", "small-button", "Đánh dấu đã đọc");
+                        readBtn.type = "button";
+                        readBtn.addEventListener("click", async () => {
+                            readBtn.disabled = true;
+                            try {
+                                await api(`/api/notifications/admin/${encodeURIComponent(notification.id)}/read`, { method: "PATCH" });
+                                notification.isRead = true;
+                                renderAdminNotifications();
+                            } catch (e) {
+                                readBtn.disabled = false;
+                                alert(e.message);
+                            }
+                        });
+                        actionsCell.append(readBtn);
+                    } else {
+                        actionsCell.textContent = "—";
+                    }
                     row.append(
                         makeElement("td", "", recipient?.username || `Thành viên #${notification.userId}`),
                         makeElement("td", "notification-message-cell", notification.message || ""),
                         makeElement("td", "", formatDateTime(notification.createdAt)),
-                        makeElement("td", "", notification.isRead ? "Đã đọc" : "Chưa đọc"));
+                        statusCell,
+                        actionsCell
+                    );
                     body.append(row);
                 });
             }
@@ -781,7 +1036,7 @@
 
             async function loadBorrows() {
                 const body = document.getElementById("borrows-table");
-                if (activeView === "borrows") body.innerHTML = '<tr><td colspan="7" class="loading">Đang tải yêu cầu...</td></tr>';
+                if (activeView === "borrows") body.innerHTML = '<tr><td colspan="6" class="loading">Đang tải yêu cầu...</td></tr>';
                 try {
                     const data = await api("/api/admin/borrows");
                     if (!Array.isArray(data)) throw new Error("Dữ liệu yêu cầu mượn không đúng định dạng.");
@@ -789,7 +1044,7 @@
                     renderBorrows();
                     renderOverview();
                 } catch (error) {
-                    if (activeView === "borrows") body.innerHTML = `<tr><td colspan="7" class="error-state">${escapeHtml(error.message)}</td></tr>`;
+                    if (activeView === "borrows") body.innerHTML = `<tr><td colspan="6" class="error-state">${escapeHtml(error.message)}</td></tr>`;
                     document.getElementById("recent-borrows").innerHTML = `<tr><td colspan="4" class="error-state">${escapeHtml(error.message)}</td></tr>`;
                     showNotice(error.message, "error");
                 }
@@ -797,14 +1052,14 @@
 
             async function loadLoans3() {
                 const body = document.getElementById("loans3-table");
-                body.innerHTML = '<tr><td colspan="7" class="loading">Đang tải giao dịch...</td></tr>';
+                body.innerHTML = '<tr><td colspan="6" class="loading">Đang tải giao dịch...</td></tr>';
                 try {
                     const data = await api("/api/v3/loans/all");
                     if (!Array.isArray(data)) throw new Error("Dữ liệu giao dịch mới không đúng định dạng.");
                     loans3 = data;
                     renderLoans3();
                 } catch (error) {
-                    body.innerHTML = `<tr><td colspan="7" class="error-state">${escapeHtml(error.message)}</td></tr>`;
+                    body.innerHTML = `<tr><td colspan="6" class="error-state">${escapeHtml(error.message)}</td></tr>`;
                     showInlineNotice("loan3-notice", error.message, "error");
                 }
             }
@@ -855,7 +1110,7 @@
                 const body = document.getElementById("loans3-table");
                 body.replaceChildren();
                 if (!loans3.length) {
-                    body.innerHTML = '<tr><td colspan="7" class="empty">Chưa có giao dịch trong module mới.</td></tr>';
+                    body.innerHTML = '<tr><td colspan="6" class="empty">Chưa có giao dịch trong module mới.</td></tr>';
                     return;
                 }
                 loans3.forEach(loan => {
@@ -867,7 +1122,7 @@
                     const status = document.createElement("td");
                     status.append(makeElement("span", `status ${String(loan.status || "").toLowerCase()}`,
                         loanStatusLabel(loan.status)));
-                    row.append(status, makeElement("td", "", formatPrice(loan.fineAmount)));
+                    row.append(status);
                     const actions = makeElement("td", "actions-cell");
                     if (["BORROWED", "EXTENDED", "OVERDUE"].includes(loan.status)) {
                         const renew = makeElement("button", "small-button", "Gia hạn 7 ngày");
@@ -1001,8 +1256,12 @@
                 try {
                     const requests = await api("/api/admin/ebooks/requests");
                     if (!Array.isArray(requests)) throw new Error("Danh sách yêu cầu E-Book không đúng định dạng.");
+                    ebookPendingCount = requests.filter(request => request.status === "PENDING").length;
                     document.getElementById("ebook-request-count").textContent =
-                        `${requests.filter(request => request.status === "PENDING").length} chờ duyệt / ${requests.length} tổng`;
+                        `${ebookPendingCount} chờ duyệt / ${requests.length} tổng`;
+                    const subtabE = document.getElementById("subtab-ebook-count");
+                    if (subtabE) subtabE.textContent = ebookPendingCount;
+                    updateTotalPendingCount();
                     body.replaceChildren();
                     if (!requests.length) {
                         body.innerHTML = '<tr><td class="empty" colspan="7">Chưa có yêu cầu mượn E-Book.</td></tr>';
@@ -1160,15 +1419,42 @@
                     const row = document.createElement("tr");
                     const bookCell = document.createElement("td");
                     bookCell.className = "book-cell";
-                    bookCell.append(makeElement("strong", "", book.title || "Chưa có tên"),
-                        makeElement("small", "", book.author || "Chưa cập nhật tác giả"));
+                    const badges = document.createElement("div");
+                    badges.style.cssText = "display:flex;gap:4px;margin-top:4px;flex-wrap:wrap";
+                    if (book.hasEBook) {
+                        badges.append(makeElement("span", "tag-pill ebook", "E-Book PDF"));
+                    }
+                    if (Number(book.quantity) > 0) {
+                        badges.append(makeElement("span", "tag-pill paper", "Sách in"));
+                    }
+                    bookCell.append(
+                        makeElement("strong", "", book.title || "Chưa có tên"),
+                        makeElement("small", "", book.author || "Chưa cập nhật tác giả"),
+                        badges
+                    );
+                    const qtyTd = document.createElement("td");
+                    if (Number(book.quantity) > 0) {
+                        qtyTd.textContent = numberFormat.format(Number(book.quantity));
+                    } else if (book.hasEBook) {
+                        qtyTd.append(makeElement("span", "tag-pill ebook", "E-Book (0 bản in)"));
+                    } else {
+                        qtyTd.textContent = "0 (Hết sách)";
+                    }
                     row.append(bookCell, makeElement("td", "", book.category || "Chưa phân loại"),
-                        makeElement("td", "", numberFormat.format(Number(book.quantity) || 0)),
+                        qtyTd,
                         makeElement("td", "", formatPrice(book.rentalPrice)),
                         makeElement("td", "", formatPrice(book.coverPrice)));
                     const actions = makeElement("td", "actions-cell");
-                    const upload = makeElement("button", "small-button", "PDF");
+                    const upload = makeElement("button", `small-button${book.hasEBook ? " success" : ""}`, book.hasEBook ? "✓ PDF" : "PDF");
                     upload.type = "button";
+                    if (book.hasEBook) {
+                        upload.style.background = "#e8f5e9";
+                        upload.style.color = "#2e7d32";
+                        upload.style.borderColor = "#c8e6c9";
+                        upload.title = "Sách đã có tệp PDF (Bấm để tải tệp mới đè lên)";
+                    } else {
+                        upload.title = "Tải tệp PDF lên cho cuốn sách này";
+                    }
                     upload.setAttribute("aria-label", `Tải PDF cho sách ${book.title || book.id}`);
                     const fileInput = document.createElement("input");
                     fileInput.type = "file";
@@ -1191,6 +1477,7 @@
                                 body: formData
                             });
                             showNotice(`Đã lưu PDF "${saved.fileName}" cho sách "${book.title}".`, "success");
+                            await loadBooks();
                         } catch (error) {
                             showNotice(error.message, "error");
                         } finally {
@@ -1218,9 +1505,12 @@
                     .sort((a, b) => String(b.borrowDate || "").localeCompare(String(a.borrowDate || "")));
                 const body = document.getElementById("borrows-table");
                 body.replaceChildren();
-                document.getElementById("pending-count").textContent = borrows.filter(item => item.status === "PENDING").length;
+                physicalPendingCount = borrows.filter(item => item.status === "PENDING").length;
+                const subtabP = document.getElementById("subtab-physical-count");
+                if (subtabP) subtabP.textContent = physicalPendingCount;
+                updateTotalPendingCount();
                 if (!filtered.length) {
-                    body.innerHTML = `<tr><td colspan="7" class="empty">${borrows.length ? "Không có yêu cầu ở trạng thái này." : "Chưa có yêu cầu mượn sách."}</td></tr>`;
+                    body.innerHTML = `<tr><td colspan="6" class="empty">${borrows.length ? "Không có yêu cầu ở trạng thái này." : "Chưa có yêu cầu mượn sách."}</td></tr>`;
                     return;
                 }
                 filtered.forEach(item => {
@@ -1230,13 +1520,6 @@
                     const statusCell = document.createElement("td");
                     statusCell.append(makeElement("span", `status ${String(item.status || "").toLowerCase()}`, statusLabel(item.status)));
                     row.append(statusCell);
-                    const fineCell = document.createElement("td");
-                    if (item.status === "BORROWED" && item.dueDate && item.dueDate < new Date().toISOString().slice(0, 10)) {
-                        fineCell.append(makeElement("span", "unavailable-badge", "Quá hạn · phí chưa khả dụng"));
-                    } else {
-                        fineCell.textContent = item.status === "BORROWED" ? "Chưa khả dụng" : "—";
-                    }
-                    row.append(fineCell);
                     const actions = makeElement("td", "actions-cell");
                     if (item.status === "PENDING") {
                         actions.append(actionButton("Duyệt", "approve", item), actionButton("Từ chối", "reject", item, true));
@@ -1275,6 +1558,32 @@
                 }
             }
 
+            function updateQuantityFieldState() {
+                const itemType = document.getElementById("book-item-type")?.value;
+                const qtyInput = document.getElementById("book-quantity");
+                const hint = document.getElementById("quantity-field-hint");
+                if (!qtyInput) return;
+                if (itemType === "EBOOK") {
+                    qtyInput.value = 0;
+                    qtyInput.readOnly = true;
+                    qtyInput.style.backgroundColor = "#f0f4f1";
+                    if (hint) {
+                        hint.textContent = "E-Book chỉ lưu hành dạng tệp PDF điện tử (0 bản in tại quầy).";
+                        hint.style.color = "#2e7d32";
+                    }
+                } else {
+                    qtyInput.readOnly = false;
+                    qtyInput.style.backgroundColor = "";
+                    if (Number(qtyInput.value) <= 0) qtyInput.value = 10;
+                    if (hint) {
+                        hint.textContent = itemType === "BOTH"
+                            ? "Số lượng sách in tại quầy (độc giả cũng có thể mượn tệp E-Book PDF)."
+                            : "Số lượng sách in tại quầy thư viện.";
+                        hint.style.color = "#888";
+                    }
+                }
+            }
+
             function openBookForm(book) {
                 const form = document.getElementById("book-form");
                 form.reset();
@@ -1286,6 +1595,19 @@
                 document.getElementById("book-quantity").value = book?.quantity ?? 0;
                 document.getElementById("book-rental-price").value = book?.rentalPrice ?? 0;
                 document.getElementById("book-cover-price").value = book?.coverPrice ?? 0;
+                const itemTypeSelect = document.getElementById("book-item-type");
+                if (itemTypeSelect) {
+                    if (book) {
+                        if (book.hasEBook && Number(book.quantity) > 0) itemTypeSelect.value = "BOTH";
+                        else if (book.hasEBook) itemTypeSelect.value = "EBOOK";
+                        else itemTypeSelect.value = "PHYSICAL";
+                    } else {
+                        itemTypeSelect.value = "BOTH";
+                    }
+                }
+                updateQuantityFieldState();
+                const imageUrlInput = document.getElementById("book-image-url");
+                if (imageUrlInput) imageUrlInput.value = book?.imageUrl || "";
                 document.getElementById("image-hint").textContent = book?.imageUrl
                     ? "Để trống ảnh nếu muốn giữ bìa hiện tại."
                     : "Chọn tệp ảnh nếu muốn thêm bìa sách.";
@@ -1294,13 +1616,41 @@
                 bookDialog.showModal();
             }
 
+            function openBookFormFromGoogle(b, itemType = "BOTH") {
+                const form = document.getElementById("book-form");
+                form.reset();
+                document.getElementById("book-id").value = "";
+                document.getElementById("book-dialog-title").textContent = "Xác nhận nhập kho từ Google Books";
+                document.getElementById("book-title").value = b.title || "";
+                document.getElementById("book-author").value = b.author || "";
+                document.getElementById("book-category").value = b.category || "Chưa phân loại";
+                document.getElementById("book-quantity").value = itemType === "EBOOK" ? 0 : 10;
+                document.getElementById("book-rental-price").value = b.estimatedRentalPrice || 15000;
+                document.getElementById("book-cover-price").value = b.estimatedCoverPrice || 100000;
+                const itemTypeSelect = document.getElementById("book-item-type");
+                if (itemTypeSelect) itemTypeSelect.value = itemType || "BOTH";
+                updateQuantityFieldState();
+                const imageUrlInput = document.getElementById("book-image-url");
+                if (imageUrlInput) imageUrlInput.value = b.imageUrl || "";
+                document.getElementById("image-hint").textContent = b.imageUrl
+                    ? "Ảnh bìa đã được tự động lấy từ Google Books. Có thể chọn tệp ảnh khác để thay thế."
+                    : "Chọn tệp ảnh nếu muốn thêm bìa sách.";
+                showInlineNotice("book-notice", "Vui lòng xem lại thông tin sách từ Google Books và chỉnh sửa nếu cần trước khi bấm Xác nhận nhập kho.", "success");
+                document.getElementById("book-submit").textContent = "Xác nhận nhập kho";
+                bookDialog.showModal();
+            }
+
             async function saveBook(event) {
                 event.preventDefault();
                 const form = event.currentTarget;
                 if (!form.reportValidity()) return;
                 const id = document.getElementById("book-id").value;
+                const itemType = document.getElementById("book-item-type")?.value;
                 const formData = new FormData(form);
                 formData.delete("id");
+                if (itemType === "EBOOK") {
+                    formData.set("quantity", "0");
+                }
                 const button = document.getElementById("book-submit");
                 button.disabled = true;
                 try {
@@ -1357,9 +1707,10 @@
                 document.getElementById("stat-titles").textContent = numberFormat.format(books.length);
                 document.getElementById("stat-copies").textContent = numberFormat.format(
                     books.reduce((total, book) => total + Math.max(0, Number(book.quantity) || 0), 0));
-                const pending = borrows.filter(item => item.status === "PENDING").length;
-                document.getElementById("stat-pending").textContent = numberFormat.format(pending);
-                document.getElementById("pending-count").textContent = pending;
+                physicalPendingCount = borrows.filter(item => item.status === "PENDING").length;
+                const subtabP = document.getElementById("subtab-physical-count");
+                if (subtabP) subtabP.textContent = physicalPendingCount;
+                updateTotalPendingCount();
                 const body = document.getElementById("recent-borrows");
                 if (!borrows.length) {
                     body.innerHTML = '<tr><td colspan="4" class="empty">Chưa có yêu cầu mượn sách.</td></tr>';
@@ -1519,9 +1870,9 @@
                         </div>
                         <div style="margin-top:auto;display:flex;gap:8px">
                             <select class="import-type-select" style="flex:1;padding:6px 8px;font-size:12px;border:1px solid #ccc;border-radius:6px">
-                                <option value="EBOOK">E-Book</option>
+                                <option value="BOTH">Cả hai (Giấy + E-Book)</option>
+                                <option value="EBOOK">E-Book (PDF)</option>
                                 <option value="PHYSICAL">Sách giấy</option>
-                                <option value="AUDIOBOOK">Sách nói</option>
                             </select>
                             <button type="button" class="primary-button import-btn" style="padding:6px 14px;font-size:12px">Nhập kho</button>
                         </div>
@@ -1529,30 +1880,8 @@
 
                     const importBtn = card.querySelector(".import-btn");
                     const typeSelect = card.querySelector(".import-type-select");
-                    importBtn.addEventListener("click", async () => {
-                        importBtn.disabled = true;
-                        importBtn.textContent = "Đang nhập...";
-                        try {
-                            const importRes = await fetch("/api/books/v2/google/import", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                    query: b.title,
-                                    isbn: b.isbn,
-                                    itemType: typeSelect.value,
-                                    quantity: 10
-                                })
-                            });
-                            if (!importRes.ok) throw new Error("Lỗi khi nhập sách vào hệ thống");
-                            importBtn.textContent = "✓ Đã nhập kho";
-                            importBtn.style.background = "#2e7d32";
-                            showNotice(`Đã nhập thành công cuốn "${b.title}" vào kho thư viện!`);
-                            loadBooks();
-                        } catch (err) {
-                            importBtn.disabled = false;
-                            importBtn.textContent = "Nhập lại";
-                            alert("Lỗi: " + err.message);
-                        }
+                    importBtn.addEventListener("click", () => {
+                        openBookFormFromGoogle(b, typeSelect.value);
                     });
 
                     resultsContainer.appendChild(card);

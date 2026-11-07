@@ -42,6 +42,17 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getLatestForAdmin());
     }
 
+    @PatchMapping("/admin/{notificationId}/read")
+    public ResponseEntity<Notification> markReadAdmin(@PathVariable Long notificationId) {
+        return ResponseEntity.ok(notificationService.markReadAdmin(notificationId));
+    }
+
+    @PatchMapping("/admin/read-all")
+    public ResponseEntity<NotificationUpdateResponse> markAllReadAdmin() {
+        return ResponseEntity.ok(new NotificationUpdateResponse(
+                notificationService.markAllReadAdmin()));
+    }
+
     @PostMapping("/admin/send")
     public ResponseEntity<NotificationDispatchResponse> sendFromAdmin(
             @Valid @RequestBody SendNotificationRequest request) {

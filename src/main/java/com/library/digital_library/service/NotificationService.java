@@ -54,6 +54,24 @@ public class NotificationService {
     }
 
     @Transactional
+    public Notification markReadAdmin(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thông báo."));
+        notification.setIsRead(true);
+        return notificationRepository.save(notification);
+    }
+
+    @Transactional
+    public int markAllReadAdmin() {
+        List<Notification> unread = notificationRepository.findAll().stream()
+                .filter(n -> Boolean.FALSE.equals(n.getIsRead()))
+                .toList();
+        unread.forEach(n -> n.setIsRead(true));
+        notificationRepository.saveAll(unread);
+        return unread.size();
+    }
+
+    @Transactional
     public int sendFromAdmin(SendNotificationRequest request) {
         if (request == null || !StringUtils.hasText(request.message())) {
             throw new IllegalArgumentException("Nội dung thông báo không được để trống.");
