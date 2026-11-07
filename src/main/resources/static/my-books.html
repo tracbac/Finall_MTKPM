@@ -120,7 +120,9 @@
             </a>
             <nav class="header-actions" aria-label="Điều hướng">
                 <a class="header-link" href="/">Trang chủ</a>
-                <a class="header-link" href="/#books">Tìm sách</a>
+                <a class="header-link" href="/books.html">Kho sách</a>
+                <a class="header-link" href="/about.html">Giới thiệu</a>
+                <button class="header-link" id="header-logout-btn" type="button" style="cursor: pointer; background: transparent;">Đăng xuất</button>
             </nav>
         </div>
     </header>
@@ -219,6 +221,10 @@
             }
 
             document.getElementById("current-year").textContent = new Date().getFullYear();
+            document.getElementById("header-logout-btn")?.addEventListener("click", () => {
+                clearSession();
+                window.location.href = "/";
+            });
             statusFilter.addEventListener("change", renderTransactions);
             document.getElementById("refresh-loans3").addEventListener("click", loadModule3);
             document.getElementById("refresh-licenses3").addEventListener("click", loadLicenses3);

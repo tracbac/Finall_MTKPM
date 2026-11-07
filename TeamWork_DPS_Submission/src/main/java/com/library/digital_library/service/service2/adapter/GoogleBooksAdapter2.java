@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -79,10 +80,8 @@ public class GoogleBooksAdapter2 implements ExternalBookCatalogPort2 {
                 ? String.join(", ", info.getAuthors())
                 : "Nhiều tác giả";
 
-        // 2. Chuyển mảng thể loại thành chuỗi
-        String categoryStr = (info.getCategories() != null && !info.getCategories().isEmpty())
-                ? String.join(", ", info.getCategories())
-                : "Chưa phân loại";
+        // 2. Chuẩn hóa thể loại sách từ Google Books sang thể loại giao diện
+        String categoryStr = normalizeCategory(info.getCategories(), info.getTitle());
 
         // 3. Trích xuất mã ISBN (ưu tiên ISBN_13, sau đó ISBN_10)
         String extractedIsbn = null;
@@ -106,12 +105,15 @@ public class GoogleBooksAdapter2 implements ExternalBookCatalogPort2 {
             extractedIsbn = "ISBN-" + item.getId();
         }
 
-        // 4. Lấy URL ảnh bìa
+        // 4. Lấy URL ảnh bìa (bảo đảm luôn dùng HTTPS)
         String imageUrl = null;
         if (info.getImageLinks() != null) {
             imageUrl = info.getImageLinks().getThumbnail() != null
                     ? info.getImageLinks().getThumbnail()
                     : info.getImageLinks().getSmallThumbnail();
+            if (imageUrl != null && imageUrl.startsWith("http://")) {
+                imageUrl = imageUrl.replace("http://", "https://");
+            }
         }
 
         // 5. Tính toán giá bìa và giá thuê ước tính dựa trên số trang (pageCount)
@@ -136,6 +138,69 @@ public class GoogleBooksAdapter2 implements ExternalBookCatalogPort2 {
                 .publisher(info.getPublisher())
                 .publishedDate(info.getPublishedDate())
                 .build();
+    }
+
+    /**
+     * Chuẩn hóa danh mục sách từ Google Books sang danh mục tiêu chuẩn của hệ thống.
+     */
+    private String normalizeCategory(List<String> rawCategories, String title) {
+        if (rawCategories != null && !rawCategories.isEmpty()) {
+            String combined = String.join(" ", rawCategories).toLowerCase(Locale.ROOT);
+            if (combined.contains("medical") || combined.contains("health") || combined.contains("medicine")
+                    || combined.contains("nursing") || combined.contains("clinical") || combined.contains("wellness")) {
+                if (combined.contains("psychology") || combined.contains("mental")) {
+                    return "Y tế & Tâm lý";
+                }
+                return "Y tế & Sức khỏe";
+            }
+            if (combined.contains("psychology") || combined.contains("mental") || combined.contains("behavioral")) {
+                return "Tâm lý học";
+            }
+            if (combined.contains("computer") || combined.contains("software") || combined.contains("programming")
+                    || combined.contains("technology") || combined.contains("data") || combined.contains("algorithm")) {
+                return "Công nghệ thông tin";
+            }
+            if (combined.contains("business") || combined.contains("economic") || combined.contains("finance")
+                    || combined.contains("management") || combined.contains("marketing") || combined.contains("commerce")) {
+                return "Kinh tế & Quản trị";
+            }
+            if (combined.contains("history") || combined.contains("archaeology") || combined.contains("civilization")) {
+                return "Lịch sử & Xã hội";
+            }
+            if (combined.contains("science") || combined.contains("mathematics") || combined.contains("physics")
+                    || combined.contains("chemistry") || combined.contains("biology")) {
+                return "Khoa học tự nhiên";
+            }
+            if (combined.contains("fiction") || combined.contains("literature") || combined.contains("art")
+                    || combined.contains("poetry") || combined.contains("drama") || combined.contains("novel")) {
+                return "Văn học & Nghệ thuật";
+            }
+            if (combined.contains("education") || combined.contains("teaching") || combined.contains("learning")) {
+                return "Giáo dục & Kỹ năng";
+            }
+            return rawCategories.get(0);
+        }
+
+        // Suy luận danh mục từ tiêu đề sách nếu Google Books không gắn thẻ category
+        if (title != null) {
+            String lowerTitle = title.toLowerCase(Locale.ROOT);
+            if (lowerTitle.contains("health") || lowerTitle.contains("medical") || lowerTitle.contains("sức khỏe")
+                    || lowerTitle.contains("y tế") || lowerTitle.contains("bệnh") || lowerTitle.contains("thuốc")) {
+                return "Y tế & Sức khỏe";
+            }
+            if (lowerTitle.contains("java") || lowerTitle.contains("python") || lowerTitle.contains("code")
+                    || lowerTitle.contains("software") || lowerTitle.contains("architecture") || lowerTitle.contains("pattern")) {
+                return "Công nghệ thông tin";
+            }
+            if (lowerTitle.contains("psychology") || lowerTitle.contains("tâm lý")) {
+                return "Tâm lý học";
+            }
+            if (lowerTitle.contains("business") || lowerTitle.contains("finance") || lowerTitle.contains("kinh tế")
+                    || lowerTitle.contains("quản trị") || lowerTitle.contains("money")) {
+                return "Kinh tế & Quản trị";
+            }
+        }
+        return "Tổng hợp";
     }
 }
 

@@ -29,6 +29,7 @@ public class BookCatalogController2Test {
     private ExternalBookDto2 sampleGoogleBook;
     private boolean shouldThrowNotFound = false;
     private boolean shouldThrowBadRequest = false;
+    private boolean shouldThrowUnexpectedError = false;
 
     private BookCatalogController2 controller;
 
@@ -36,6 +37,7 @@ public class BookCatalogController2Test {
     void setUp() {
         shouldThrowNotFound = false;
         shouldThrowBadRequest = false;
+        shouldThrowUnexpectedError = false;
 
         sampleDetail = CatalogBookDetailResponse2.builder()
                 .id(1L)
@@ -67,6 +69,9 @@ public class BookCatalogController2Test {
 
             @Override
             public CatalogBookDetailResponse2 importFromGoogleBooks(GoogleImportRequest2 request) {
+                if (shouldThrowUnexpectedError) {
+                    throw new RuntimeException("Internal failure");
+                }
                 if (shouldThrowBadRequest || request.getQuery() == null && request.getIsbn() == null) {
                     throw new IllegalArgumentException("Cần cung cấp ít nhất từ khóa");
                 }
@@ -75,11 +80,17 @@ public class BookCatalogController2Test {
 
             @Override
             public CatalogBookDetailResponse2 createBookViaFactory(CatalogItemRequest2 request) {
+                if (shouldThrowUnexpectedError) {
+                    throw new RuntimeException("Internal failure");
+                }
                 return sampleDetail;
             }
 
             @Override
             public CatalogBookDetailResponse2 getBookDetail(Long bookId) {
+                if (shouldThrowUnexpectedError) {
+                    throw new RuntimeException("Internal failure");
+                }
                 if (shouldThrowNotFound || bookId == 999L) {
                     throw new NoSuchElementException("Không tìm thấy sách");
                 }
@@ -157,5 +168,22 @@ public class BookCatalogController2Test {
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals("Không tìm thấy sách", response.getBody());
+    }
+
+    @Test
+    @DisplayName("Lỗi nội bộ không bị chuyển thành phản hồi thành công hoặc lộ qua body")
+    void testUnexpectedErrorsArePropagated() {
+        shouldThrowUnexpectedError = true;
+
+        GoogleImportRequest2 importRequest = GoogleImportRequest2.builder().query("Clean").build();
+        CatalogItemRequest2 createRequest = CatalogItemRequest2.builder()
+                .title("Book")
+                .author("Author")
+                .itemType("PHYSICAL")
+                .build();
+
+        assertThrows(RuntimeException.class, () -> controller.importFromGoogleBooks(importRequest));
+        assertThrows(RuntimeException.class, () -> controller.createBookViaFactory(createRequest));
+        assertThrows(RuntimeException.class, () -> controller.getBookMetadata(1L));
     }
 }

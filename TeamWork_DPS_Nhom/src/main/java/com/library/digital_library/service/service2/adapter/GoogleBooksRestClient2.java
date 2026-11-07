@@ -18,18 +18,17 @@ import java.util.Locale;
 
 /**
  * Adaptee trong Adapter Pattern.
- * Đóng vai trò là Client kỹ thuật giao tiếp với Google Books API thông qua giao thức HTTP REST.
- * Đi kèm cơ chế Fallback Online sang OpenLibrary API và Offline Mock khi Google Books API bị 429 Quota Exceeded.
+ * Đóng vai trò là Client kỹ thuật giao tiếp trực tiếp với Google Books API thông qua giao thức HTTP REST.
+ * Đi kèm cơ chế Offline Mock dự phòng an toàn khi mất mạng hoặc chạy Unit Test.
  */
 @Component
 public class GoogleBooksRestClient2 {
 
     private static final Logger log = LoggerFactory.getLogger(GoogleBooksRestClient2.class);
     private static final String GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes";
-    private static final String OPEN_LIBRARY_API_URL = "https://openlibrary.org/search.json";
 
-    @Value("${google.books.api.key:}")
-    private String apiKey;
+    @Value("${google.books.api.key:AIzaSyBPwKQnkI4wJHW0QFp_3imbJvrkB0It4zA}")
+    private String apiKey = "AIzaSyBPwKQnkI4wJHW0QFp_3imbJvrkB0It4zA";
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -55,8 +54,7 @@ public class GoogleBooksRestClient2 {
     }
 
     /**
-     * Phương thức đặc thù của Adaptee gọi Google Volumes API có hỗ trợ phân trang (page).
-     * Tự động chuyển đổi sang OpenLibrary hoặc Offline Mock nếu Google Books chặn 429.
+     * Phương thức đặc thù của Adaptee gọi Google Books API có hỗ trợ phân trang (page).
      */
     public GoogleBooksModel2.GoogleVolumesResponse2 queryGoogleVolumesApi(String q, int page, int maxResults) {
         int safePage = Math.max(page, 1);
@@ -64,13 +62,18 @@ public class GoogleBooksRestClient2 {
         int startIndex = (safePage - 1) * safeMaxResults;
         String searchQuery = (q != null && !q.isBlank()) ? q.trim() : "Design Patterns";
 
-        // 1. Thử gọi Google Books API thật
+        // 1. Gọi trực tiếp Google Books API chính thức
         try {
             String googleQuery = searchQuery;
-            if (googleQuery.toLowerCase(Locale.ROOT).startsWith("title:")) {
+            String lower = googleQuery.toLowerCase(Locale.ROOT);
+            if (lower.startsWith("title:")) {
                 googleQuery = "intitle:" + googleQuery.substring("title:".length()).trim();
-            } else if (googleQuery.toLowerCase(Locale.ROOT).startsWith("author:")) {
+            } else if (lower.startsWith("author:")) {
                 googleQuery = "inauthor:" + googleQuery.substring("author:".length()).trim();
+            } else if (lower.startsWith("category:") || lower.startsWith("subject:")) {
+                googleQuery = "subject:" + googleQuery.substring(googleQuery.indexOf(":") + 1).trim();
+            } else if (lower.startsWith("isbn:")) {
+                googleQuery = "isbn:" + googleQuery.substring("isbn:".length()).trim();
             }
 
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(GOOGLE_BOOKS_API_URL)
@@ -83,264 +86,26 @@ public class GoogleBooksRestClient2 {
             }
 
             URI uri = builder.build().encode().toUri();
-            log.info("Gọi Google Books API trang {} với tối đa {} kết quả", safePage, safeMaxResults);
+            log.info("Gọi Google Books API trang {} (startIndex: {}) với từ khóa: '{}'", safePage, startIndex, googleQuery);
 
             ResponseEntity<GoogleBooksModel2.GoogleVolumesResponse2> response =
                     restTemplate.getForEntity(uri, GoogleBooksModel2.GoogleVolumesResponse2.class);
 
-            if (response.getStatusCode().is2xxSuccessful()
-                    && response.getBody() != null
-                    && response.getBody().getItems() != null
-                    && !response.getBody().getItems().isEmpty()) {
-                return response.getBody();
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                GoogleBooksModel2.GoogleVolumesResponse2 body = response.getBody();
+                if (body.getItems() == null) {
+                    body.setItems(List.of());
+                }
+                return body;
             }
         } catch (Exception ex) {
-            log.warn("Google Books API trả về lỗi hoặc quá tải ({}) - Đang chuyển sang OpenLibrary trực tuyến...", ex.getMessage());
+            log.warn("Không thể gọi Google Books API ({}) - Kích hoạt Mock dự phòng.", ex.getMessage());
         }
 
-        // 2. Thử gọi OpenLibrary API trực tuyến thật (hoàn toàn miễn phí, hỗ trợ phân trang chuẩn xác)
-        try {
-            URI openLibUri = buildOpenLibraryUri(searchQuery, safePage, safeMaxResults);
-
-            log.info("Kết nối OpenLibrary API: {}", openLibUri);
-            ResponseEntity<String> openLibRes = restTemplate.getForEntity(openLibUri, String.class);
-
-            if (openLibRes.getStatusCode().is2xxSuccessful() && openLibRes.getBody() != null) {
-                GoogleBooksModel2.GoogleVolumesResponse2 converted = parseOpenLibraryResponse(openLibRes.getBody(), safeMaxResults);
-                if (converted != null && converted.getItems() != null && !converted.getItems().isEmpty()) {
-                    return converted;
-                }
-
-                // Nếu tìm chính xác bị 0 kết quả (do gõ nhầm chính tả như 'clean achitecture'), tự động nới lỏng tìm kiếm bằng OR
-                if (searchQuery.contains(" ") && !searchQuery.contains(":")) {
-                    String orQuery = searchQuery.replaceAll("\\s+", " OR ");
-                    URI orUri = buildOpenLibraryUri(orQuery, safePage, safeMaxResults);
-                    log.info("Thử tìm kiếm nới lỏng lỗi chính tả trên OpenLibrary: {}", orUri);
-                    ResponseEntity<String> orRes = restTemplate.getForEntity(orUri, String.class);
-                    if (orRes.getStatusCode().is2xxSuccessful() && orRes.getBody() != null) {
-                        GoogleBooksModel2.GoogleVolumesResponse2 orConverted = parseOpenLibraryResponse(orRes.getBody(), safeMaxResults);
-                        if (orConverted != null && orConverted.getItems() != null && !orConverted.getItems().isEmpty()) {
-                            return orConverted;
-                        }
-                    }
-                }
-
-                // Kết nối Internet thành công nhưng từ khóa không có sách hoặc đã tới trang cuối
-                return GoogleBooksModel2.GoogleVolumesResponse2.builder()
-                        .kind("books#volumes")
-                        .totalItems(0)
-                        .items(List.of())
-                        .build();
-            }
-        } catch (Exception ex) {
-            log.warn("Không thể kết nối OpenLibrary ({}) - Kích hoạt cơ chế Offline Mock dự phòng.", ex.getMessage());
-        }
-
-        // 3. Fallback an toàn khi mất mạng hoặc không thể truy cập internet
+        // 2. Fallback Offline Mock an toàn khi mất mạng hoặc trong môi trường test cô lập
         return buildOfflineMockResponse(searchQuery, safePage, safeMaxResults);
     }
 
-    /**
-     * Xây dựng URI truy vấn OpenLibrary hỗ trợ tìm theo trường (title, author, subject, isbn) hoặc từ khóa tự do.
-     */
-    private URI buildOpenLibraryUri(String query, int page, int maxResults) {
-        UriComponentsBuilder openLibBuilder = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
-                .queryParam("fields", "key,title,author_name,publisher,first_publish_year,number_of_pages_median,isbn,cover_i,subject")
-                .queryParam("page", page)
-                .queryParam("limit", maxResults);
-
-        String lowerQ = (query != null) ? query.toLowerCase(Locale.ROOT).trim() : "";
-        if (lowerQ.startsWith("intitle:")) {
-            openLibBuilder.queryParam("title", query.substring("intitle:".length()).trim());
-        } else if (lowerQ.startsWith("title:")) {
-            openLibBuilder.queryParam("title", query.substring("title:".length()).trim());
-        } else if (lowerQ.startsWith("inauthor:")) {
-            openLibBuilder.queryParam("author", query.substring("inauthor:".length()).trim());
-        } else if (lowerQ.startsWith("author:")) {
-            openLibBuilder.queryParam("author", query.substring("author:".length()).trim());
-        } else if (lowerQ.startsWith("subject:")) {
-            openLibBuilder.queryParam("subject", query.substring("subject:".length()).trim());
-        } else if (lowerQ.startsWith("isbn:")) {
-            openLibBuilder.queryParam("isbn", query.substring("isbn:".length()).trim());
-        } else {
-            openLibBuilder.queryParam("q", query);
-        }
-
-        return openLibBuilder.build().encode().toUri();
-    }
-
-    /**
-     * Chuyển đổi kết quả OpenLibrary sang chuẩn Google Books Model để Adapter xử lý.
-     */
-    private GoogleBooksModel2.GoogleVolumesResponse2 parseOpenLibraryResponse(String jsonString, int limit) {
-        try {
-            JsonNode root = objectMapper.readTree(jsonString);
-            JsonNode docs = root.get("docs");
-            if (docs == null || !docs.isArray() || docs.isEmpty()) {
-                return null;
-            }
-
-            List<GoogleBooksModel2.GoogleVolumeItem2> items = new ArrayList<>();
-            for (JsonNode doc : docs) {
-                if (items.size() >= limit) break;
-
-                String title = doc.has("title") ? doc.get("title").asText() : "Tài liệu";
-                List<String> authors = new ArrayList<>();
-                if (doc.has("author_name") && doc.get("author_name").isArray()) {
-                    doc.get("author_name").forEach(a -> authors.add(a.asText()));
-                }
-                if (authors.isEmpty()) authors.add("Nhiều tác giả");
-
-                String publisher = doc.has("publisher") && doc.get("publisher").isArray() && !doc.get("publisher").isEmpty()
-                        ? doc.get("publisher").get(0).asText() : "Nhà xuất bản Quốc tế";
-
-                int pages = doc.has("number_of_pages_median") ? doc.get("number_of_pages_median").asInt() : 350;
-
-                String isbnVal = null;
-                if (doc.has("isbn") && doc.get("isbn").isArray() && !doc.get("isbn").isEmpty()) {
-                    isbnVal = doc.get("isbn").get(0).asText();
-                }
-
-                String coverUrl = null;
-                if (doc.has("cover_i")) {
-                    coverUrl = "https://covers.openlibrary.org/b/id/" + doc.get("cover_i").asText() + "-M.jpg";
-                } else {
-                    coverUrl = "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300";
-                }
-
-                items.add(GoogleBooksModel2.GoogleVolumeItem2.builder()
-                        .id("OL-" + (doc.has("key") ? doc.get("key").asText().replace("/works/", "") : System.currentTimeMillis()))
-                        .volumeInfo(GoogleBooksModel2.VolumeInfo.builder()
-                                .title(title)
-                                .authors(authors)
-                                .publisher(publisher)
-                                .publishedDate(doc.has("first_publish_year") ? doc.get("first_publish_year").asText() : "2022")
-                                .description("Tài liệu tra cứu trực tuyến quốc tế từ OpenLibrary về chủ đề " + title + ".")
-                                .pageCount(pages > 0 ? pages : 320)
-                                .categories(List.of(resolveCategory(doc, title)))
-                                .industryIdentifiers(List.of(
-                                        GoogleBooksModel2.IndustryIdentifier.builder().type("ISBN_13").identifier(isbnVal != null ? isbnVal : "978" + (long)(Math.random() * 10000000000L)).build()
-                                ))
-                                .imageLinks(GoogleBooksModel2.ImageLinks.builder()
-                                        .thumbnail(coverUrl)
-                                        .smallThumbnail(coverUrl)
-                                        .build())
-                                .previewLink("https://openlibrary.org" + (doc.has("key") ? doc.get("key").asText() : ""))
-                                .build())
-                        .build());
-            }
-
-            int total = (root.has("numFound") && root.get("numFound").isInt())
-                    ? root.get("numFound").asInt()
-                    : items.size();
-
-            return GoogleBooksModel2.GoogleVolumesResponse2.builder()
-                    .kind("books#volumes")
-                    .totalItems(total)
-                    .items(items)
-                    .build();
-        } catch (Exception e) {
-            log.error("Lỗi khi chuyển đổi dữ liệu từ OpenLibrary: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Tự động phân tích và trích xuất thể loại/chủ đề chính xác của cuốn sách
-     * từ danh sách subjects của OpenLibrary hoặc từ tiêu đề tài liệu.
-     */
-    private String resolveCategory(JsonNode doc, String title) {
-        List<String> rawSubjects = new ArrayList<>();
-        if (doc != null && doc.has("subject") && doc.get("subject").isArray()) {
-            for (JsonNode s : doc.get("subject")) {
-                if (s != null && s.isTextual() && !s.asText().isBlank()) {
-                    rawSubjects.add(s.asText().trim());
-                }
-            }
-        }
-
-        // 1. Nhóm Y tế, Sức khỏe, Y học, Dược & Tâm lý sức khỏe
-        if (matchesDomain(rawSubjects, title, "health", "medicine", "medical", "disease", "nursing", "hospital",
-                "sức khỏe", "y tế", "y học", "bệnh", "dược", "clinical", "wellness")) {
-            if (matchesDomain(rawSubjects, title, "psychology", "psychological", "tâm lý", "mental")) {
-                return "Y tế & Tâm lý";
-            }
-            return "Y tế & Sức khỏe";
-        }
-
-        // 2. Nhóm Lịch sử, Xã hội học & Văn minh
-        if (matchesDomain(rawSubjects, title, "history", "historical", "civilization", "archaeology", "lịch sử", "văn minh")) {
-            return "Lịch sử & Xã hội";
-        }
-
-        // 3. Nhóm Tâm lý học & Hành vi con người
-        if (matchesDomain(rawSubjects, title, "psychology", "psychological", "behavior", "behavioral", "tâm lý", "mental illness", "counseling")) {
-            return "Tâm lý học";
-        }
-
-        // 4. Nhóm Kinh tế, Kinh doanh, Quản trị, Đầu tư, Tài chính
-        if (matchesDomain(rawSubjects, title, "business", "economics", "economic", "finance", "management", "marketing",
-                "commerce", "investment", "kinh tế", "kinh doanh", "tài chính", "quản trị", "đầu tư")) {
-            return "Kinh tế & Quản trị";
-        }
-
-        // 5. Nhóm Công nghệ thông tin, Lập trình, Phần mềm
-        if (matchesDomain(rawSubjects, title, "computer", "software", "programming", "java", "python", "algorithm",
-                "database", "công nghệ thông tin", "lập trình", "phần mềm", "cybersecurity", "cloud", "artificial intelligence")) {
-            return "Công nghệ thông tin";
-        }
-
-        // 6. Nhóm Khoa học tự nhiên & Toán học
-        if (matchesDomain(rawSubjects, title, "physics", "chemistry", "biology", "mathematics", "math", "science",
-                "khoa học", "toán học", "vật lý", "hóa học", "sinh học", "astronomy")) {
-            return "Khoa học tự nhiên";
-        }
-
-        // 7. Nhóm Văn học, Nghệ thuật & Tiểu thuyết
-        if (matchesDomain(rawSubjects, title, "fiction", "novel", "literature", "poetry", "drama", "văn học",
-                "tiểu thuyết", "truyện", "art", "fine arts", "painting", "photography")) {
-            return "Văn học & Nghệ thuật";
-        }
-
-        // 8. Nhóm Giáo dục & Kỹ năng sống
-        if (matchesDomain(rawSubjects, title, "education", "teaching", "learning", "pedagogy", "self-help",
-                "self-improvement", "giáo dục", "kỹ năng", "đào tạo")) {
-            return "Giáo dục & Kỹ năng";
-        }
-
-        // 9. Ưu tiên lấy subject thực tế sạch đầu tiên từ OpenLibrary nếu có
-        for (String raw : rawSubjects) {
-            if (raw.length() >= 3 && raw.length() <= 30 && !raw.contains(":") && !raw.matches(".*\\d{2,}.*")) {
-                return raw;
-            }
-        }
-
-        return "Tổng hợp";
-    }
-
-    private boolean matchesDomain(List<String> subjects, String title, String... keywords) {
-        String lowerTitle = (title != null) ? title.toLowerCase(Locale.ROOT) : "";
-        for (String kw : keywords) {
-            String lowerKw = kw.toLowerCase(Locale.ROOT);
-            // Kiểm tra trong tiêu đề sách (nếu keyword ngắn như 'art' thì kiểm tra nguyên từ \b)
-            if (lowerKw.length() <= 3) {
-                if (lowerTitle.matches(".*\\b" + lowerKw + "\\b.*")) return true;
-            } else if (lowerTitle.contains(lowerKw)) {
-                return true;
-            }
-
-            // Kiểm tra trong danh sách subjects
-            for (String sub : subjects) {
-                String lowerSub = sub.toLowerCase(Locale.ROOT);
-                if (lowerKw.length() <= 3) {
-                    if (lowerSub.matches(".*\\b" + lowerKw + "\\b.*")) return true;
-                } else if (lowerSub.contains(lowerKw)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
     private GoogleBooksModel2.GoogleVolumesResponse2 buildOfflineMockResponse(String query, int limit) {
         return buildOfflineMockResponse(query, 1, limit);

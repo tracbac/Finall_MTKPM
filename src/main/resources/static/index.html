@@ -339,16 +339,16 @@
 <body>
     <header class="topbar">
         <div class="shell topbar-inner">
-            <a class="brand" href="#" aria-label="Thư viện Mộc - Trang chủ">
+            <a class="brand" href="/" aria-label="Thư viện Mộc - Trang chủ">
                 <span class="brand-mark" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 5.5v12M8 7h8M8 10h7"/></svg>
                 </span>
                 <span>Thư viện mộc</span>
             </a>
             <nav class="nav-links" aria-label="Điều hướng chính">
-                <a href="#home">Trang chủ</a>
-                <a href="#books">Kho sách</a>
-                <a href="#about">Giới thiệu</a>
+                <a href="/" style="color: var(--green); font-weight: 700; border-bottom: 2px solid var(--green); padding-bottom: 4px;">Trang chủ</a>
+                <a href="/books.html">Kho sách</a>
+                <a href="/about.html">Giới thiệu</a>
             </nav>
             <div class="top-actions">
                 <button class="icon-button" type="button" aria-label="Tìm sách" id="focus-search">
@@ -366,7 +366,7 @@
                     <span class="eyebrow">Góc nhỏ dành cho người mê sách</span>
                     <h1 id="hero-title">Mở một cuốn sách,<br><em>mở một thế giới.</em></h1>
                     <p>Tìm cuốn sách tiếp theo dành cho bạn. Từ những trang văn dịu dàng đến các ý tưởng làm thay đổi cách ta nhìn thế giới.</p>
-                    <a class="primary-link" href="#books">
+                    <a class="primary-link" href="/books.html">
                         Khám phá kho sách
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </a>
@@ -408,9 +408,9 @@
                 <div>
                     <span class="eyebrow">Bắt đầu hành trình</span>
                     <h2 id="catalog-title">Sách dành cho bạn</h2>
-                    <p class="section-description">Chọn một cuốn, tìm một điều mới mẻ.</p>
+                    <p class="section-description">Một số đầu sách tiêu biểu được chọn lọc dành riêng cho bạn.</p>
                 </div>
-                <a class="view-all" href="#books">Xem tất cả sách
+                <a class="view-all" href="/books.html">Xem tất cả sách
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </a>
             </div>
@@ -430,31 +430,10 @@
                 <div class="skeleton"></div>
                 <div class="skeleton"></div>
             </div>
-            <nav class="pagination" id="book-pagination" aria-label="Phân trang sách" hidden>
-                <label class="pagination-page" for="book-page">
-                    <span>Trang</span>
-                    <select id="book-page" aria-label="Chọn trang sách"></select>
-                </label>
-                <span id="page-count" aria-live="polite"></span>
-                <button id="previous-page" type="button" aria-label="Trang trước" disabled>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                </button>
-                <button id="next-page" type="button" aria-label="Trang sau">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
-                </button>
-            </nav>
-        </section>
-
-        <section class="shell" id="about">
-            <div class="bottom-banner">
-                <div>
-                    <h2>Một góc đọc sách của riêng bạn</h2>
-                    <p>Thư viện đang được hoàn thiện để bạn dễ dàng tìm và mượn những cuốn sách yêu thích.</p>
-                </div>
-                <a class="text-link" href="#books">Tìm sách ngay
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <div style="text-align: center; margin-top: 42px; margin-bottom: 10px;">
+                <a class="primary-link" href="/books.html" style="display: inline-flex; min-height: 48px; padding: 0 28px; border-radius: 999px;">
+                    Xem toàn bộ kho sách thư viện
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </a>
             </div>
         </section>
@@ -500,21 +479,15 @@
             const searchInput = document.getElementById("book-search");
             const categoryList = document.getElementById("category-list");
             const resultLine = document.getElementById("result-line");
-            const pagination = document.getElementById("book-pagination");
-            const pageSelect = document.getElementById("book-page");
-            const pageCountLabel = document.getElementById("page-count");
-            const previousPageButton = document.getElementById("previous-page");
-            const nextPageButton = document.getElementById("next-page");
             const dialog = document.getElementById("book-dialog");
             const borrowForm = document.getElementById("borrow-form");
             const borrowSubmit = document.getElementById("borrow-submit");
             const borrowMessage = document.getElementById("borrow-message");
             const numberFormat = new Intl.NumberFormat("vi-VN");
-            const pageSize = 8;
+            const previewLimit = 8;
             let books = [];
             let selectedCategory = "";
             let searchTerm = "";
-            let currentPage = 1;
             let selectedBook = null;
             let requestSubmitted = false;
 
@@ -531,15 +504,8 @@
             borrowForm.addEventListener("submit", submitBorrowRequest);
             searchInput.addEventListener("input", () => {
                 searchTerm = searchInput.value.trim().toLocaleLowerCase("vi");
-                currentPage = 1;
                 renderBooks();
             });
-            pageSelect.addEventListener("change", () => {
-                currentPage = Number(pageSelect.value);
-                renderBooks();
-            });
-            previousPageButton.addEventListener("click", () => changePage(currentPage - 1));
-            nextPageButton.addEventListener("click", () => changePage(currentPage + 1));
 
             function renderAccountActions() {
                 const actions = document.querySelector(".top-actions");
@@ -613,13 +579,7 @@
 
             function selectCategory(category) {
                 selectedCategory = category;
-                currentPage = 1;
                 renderCategories();
-                renderBooks();
-            }
-
-            function changePage(page) {
-                currentPage = page;
                 renderBooks();
             }
 
@@ -677,9 +637,6 @@
             function renderBooks() {
                 const filtered = getFilteredBooks();
                 grid.replaceChildren();
-                const pageCount = Math.ceil(filtered.length / pageSize);
-                currentPage = Math.min(Math.max(currentPage, 1), Math.max(pageCount, 1));
-                renderPagination(pageCount);
                 if (!filtered.length) {
                     resultLine.textContent = `Hiển thị 0 / ${books.length} đầu sách`;
                     const empty = makeElement("div", "state-panel");
@@ -692,26 +649,11 @@
                     grid.append(empty);
                     return;
                 }
-                const startIndex = (currentPage - 1) * pageSize;
-                const visibleBooks = filtered.slice(startIndex, startIndex + pageSize);
+                const visibleBooks = filtered.slice(0, previewLimit);
                 resultLine.textContent =
-                    `Hiển thị ${startIndex + 1}–${startIndex + visibleBooks.length} / ${filtered.length} đầu sách`;
+                    `Hiển thị ${visibleBooks.length} / ${filtered.length} đầu sách tiêu biểu`;
                 visibleBooks.forEach((book, index) =>
-                    grid.append(createBookCard(book, startIndex + index)));
-            }
-
-            function renderPagination(pageCount) {
-                pagination.hidden = pageCount <= 1;
-                pageSelect.replaceChildren();
-                for (let page = 1; page <= pageCount; page += 1) {
-                    const option = makeElement("option", "", String(page));
-                    option.value = String(page);
-                    option.selected = page === currentPage;
-                    pageSelect.append(option);
-                }
-                pageCountLabel.textContent = `trong ${pageCount}`;
-                previousPageButton.disabled = currentPage <= 1;
-                nextPageButton.disabled = currentPage >= pageCount;
+                    grid.append(createBookCard(book, index)));
             }
 
             function updateStats() {

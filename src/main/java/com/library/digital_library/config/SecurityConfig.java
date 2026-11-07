@@ -88,7 +88,7 @@ public class SecurityConfig {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 }))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/index.html", "/auth.html", "/admin.html", "/my-books.html", "/favicon.ico").permitAll()
+                .requestMatchers("/", "/index.html", "/books.html", "/about.html", "/auth.html", "/admin.html", "/my-books.html", "/favicon.ico").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/notifications/admin", "/api/notifications/admin/**").hasRole("ADMIN")
