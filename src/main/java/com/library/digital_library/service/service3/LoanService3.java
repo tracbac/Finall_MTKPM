@@ -4,11 +4,14 @@ import com.library.digital_library.model.Book;
 import com.library.digital_library.model.User;
 import com.library.digital_library.model.model3.*;
 import com.library.digital_library.repository.BookRepository;
+import com.library.digital_library.repository.BorrowTransactionRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.repository.repository3.FineReceipt3Repository;
 import com.library.digital_library.repository.repository3.LoanRecord3Repository;
-import com.library.digital_library.service.NotificationService;
+import com.library.digital_library.service.service4.observer.LibraryEvent4;
+import com.library.digital_library.service.service4.observer.LibraryEventType4;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +31,9 @@ public class LoanService3 {
     private final FineReceipt3Repository fineReceiptRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final BorrowTransactionRepository borrowTransactionRepository;
+    // Subject trong Observer Pattern (Thành viên 4): phát sự kiện thay vì gọi trực tiếp NotificationService
+    private final ApplicationEventPublisher eventPublisher;
 
     public static final double DAILY_FINE_RATE = 5000.0; // 5.000 VNĐ / ngày trễ hạn
     public static final int DEFAULT_LOAN_DAYS = 14;     // Mượn mặc định 14 ngày
@@ -51,7 +56,9 @@ public class LoanService3 {
         }
 
         // Kiểm tra chặn mượn: nếu user đang giữ sách quá hạn chưa hoàn trả
-        long overdueLoans = loanRecordRepository.countByUserIdAndStatus(user.getId(), LoanStatus3.OVERDUE);
+        // Đếm cả phiếu mượn tại quầy (LoanRecord3) và yêu cầu mượn trực tuyến (BorrowTransaction) đã quá hạn
+        long overdueLoans = loanRecordRepository.countByUserIdAndStatus(user.getId(), LoanStatus3.OVERDUE)
+                + borrowTransactionRepository.countOverdueBorrows(user.getId(), LocalDate.now());
         if (overdueLoans > 0) {
             throw new IllegalStateException("Người dùng đang có sách mượn quá hạn chưa trả. Vui lòng hoàn trả và giải quyết quá hạn trước!");
         }
@@ -84,9 +91,9 @@ public class LoanService3 {
                 .build();
 
         LoanRecord3 savedLoan = loanRecordRepository.save(loanRecord);
-        notificationService.notifyUser(user.getId(),
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.LOAN_CREATED, user.getId(),
                 "Bạn đã mượn sách \"" + book.getTitle() + "\" thành công. Hạn trả: "
-                        + loanRecord.getDueDate() + ".");
+                        + loanRecord.getDueDate() + "."));
         return savedLoan;
     }
 
@@ -142,7 +149,7 @@ public class LoanService3 {
                 ? "Bạn đã trả sách \"" + book.getTitle() + "\" trễ hạn. Khoản phạt cần thanh toán: "
                         + loan.getFineAmount() + " đ."
                 : "Bạn đã trả sách \"" + book.getTitle() + "\" thành công.";
-        notificationService.notifyUser(loan.getUser().getId(), message);
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.LOAN_RETURNED, loan.getUser().getId(), message));
         return savedLoan;
     }
 
@@ -182,8 +189,8 @@ public class LoanService3 {
         loan.setNotes("Gia hạn lần " + loan.getRenewalCount() + " thêm " + extraDays + " ngày. Hạn mới: " + loan.getDueDate());
 
         LoanRecord3 savedLoan = loanRecordRepository.save(loan);
-        notificationService.notifyUser(loan.getUser().getId(),
-                "Đã gia hạn sách \"" + loan.getBook().getTitle() + "\" đến ngày " + loan.getDueDate() + ".");
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.LOAN_RENEWED, loan.getUser().getId(),
+                "Đã gia hạn sách \"" + loan.getBook().getTitle() + "\" đến ngày " + loan.getDueDate() + "."));
         return savedLoan;
     }
 
@@ -205,9 +212,9 @@ public class LoanService3 {
             loan.setFineAmount(estimatedFine);
             loan.setNotes("Quá hạn " + overdueDays + " ngày. Tiền phạt ước tính: " + estimatedFine + " VNĐ.");
             loanRecordRepository.save(loan);
-            notificationService.notifyUser(loan.getUser().getId(),
+            eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.LOAN_OVERDUE, loan.getUser().getId(),
                     "Sách \"" + loan.getBook().getTitle() + "\" đã quá hạn " + overdueDays
-                            + " ngày. Phí ước tính: " + estimatedFine + " đ.");
+                            + " ngày. Phí ước tính: " + estimatedFine + " đ."));
         }
         return overdueLoans;
     }
@@ -243,8 +250,8 @@ public class LoanService3 {
                 loanRecordRepository.save(loan);
             }
         }
-        notificationService.notifyUser(fine.getUser().getId(),
-                "Đã ghi nhận thanh toán khoản phạt " + fine.getTotalFine() + " đ bằng " + paymentMethod + ".");
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.FINE_PAID, fine.getUser().getId(),
+                "Đã ghi nhận thanh toán khoản phạt " + fine.getTotalFine() + " đ bằng " + paymentMethod + "."));
 
         return updatedFine;
     }

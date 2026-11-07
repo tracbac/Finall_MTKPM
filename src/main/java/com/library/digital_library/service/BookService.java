@@ -5,11 +5,13 @@ import com.library.digital_library.dto.BookResponse;
 import com.library.digital_library.model.Book;
 import com.library.digital_library.model.BookPrice;
 import com.library.digital_library.repository.BookRepository;
+import com.library.digital_library.service.service4.observer.LibraryEvent4;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -21,24 +23,27 @@ public class BookService {
     private final BookPriceService bookPriceService;
     private final BookCoverStorage bookCoverStorage;
     private final EBookFileService eBookFileService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
     public BookService(
             BookRepository bookRepository,
             BookPriceService bookPriceService,
             BookCoverStorage bookCoverStorage,
-            EBookFileService eBookFileService) {
+            EBookFileService eBookFileService,
+            ApplicationEventPublisher eventPublisher) {
         this.bookRepository = bookRepository;
         this.bookPriceService = bookPriceService;
         this.bookCoverStorage = bookCoverStorage;
         this.eBookFileService = eBookFileService;
+        this.eventPublisher = eventPublisher;
     }
 
     public BookService(
             BookRepository bookRepository,
             BookPriceService bookPriceService,
             BookCoverStorage bookCoverStorage) {
-        this(bookRepository, bookPriceService, bookCoverStorage, null);
+        this(bookRepository, bookPriceService, bookCoverStorage, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -77,6 +82,11 @@ public class BookService {
 
         if (eBookFileService != null && ("EBOOK".equalsIgnoreCase(request.getItemType()) || "BOTH".equalsIgnoreCase(request.getItemType()))) {
             eBookFileService.registerSampleEBook(savedBook);
+        }
+
+        // Observer Pattern (Thành viên 4): thông báo sách mới tới toàn bộ độc giả
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(LibraryEvent4.newBook(savedBook.getTitle(), savedBook.getAuthor()));
         }
 
         return BookResponse.from(savedBook, price, checkHasEBook(savedBook.getId()));

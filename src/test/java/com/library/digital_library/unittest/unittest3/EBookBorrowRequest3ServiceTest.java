@@ -1,13 +1,6 @@
 package com.library.digital_library.unittest.unittest3;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.argThat;
-
+import org.springframework.context.ApplicationEventPublisher;
 import com.library.digital_library.model.Book;
 import com.library.digital_library.model.User;
 import com.library.digital_library.model.model3.DrmLicense3;
@@ -19,7 +12,7 @@ import com.library.digital_library.repository.repository3.DrmLicense3Repository;
 import com.library.digital_library.repository.repository3.EBookBorrowRequest3Repository;
 import com.library.digital_library.service.service3.DrmLicenseService3;
 import com.library.digital_library.service.service3.EBookBorrowRequest3Service;
-import com.library.digital_library.service.NotificationService;
+import com.library.digital_library.service.service4.observer.LibraryEventType4;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +20,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static com.library.digital_library.unittest.unittest4.LibraryEventMatchers4.userEvent;
+import static com.library.digital_library.unittest.unittest4.LibraryEventMatchers4.roleEvent;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.argThat;
 
 @ExtendWith(MockitoExtension.class)
 class EBookBorrowRequest3ServiceTest {
@@ -47,7 +50,7 @@ class EBookBorrowRequest3ServiceTest {
     private DrmLicenseService3 drmLicenseService;
 
     @Mock
-    private NotificationService notificationService;
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private EBookBorrowRequest3Service requestService;
@@ -83,10 +86,10 @@ class EBookBorrowRequest3ServiceTest {
         assertEquals(book, request.getBook());
         assertEquals(EBookRequestStatus3.PENDING, request.getStatus());
         verify(requestRepository).save(any(EBookBorrowRequest3.class));
-        verify(notificationService).notifyUser(7L,
-                "Yêu cầu mượn E-Book \"Digital Book\" đã được gửi và đang chờ duyệt.");
-        verify(notificationService).notifyRole("ADMIN",
-                "Có yêu cầu mượn E-Book \"Digital Book\" mới từ reader.");
+        verify(eventPublisher).publishEvent(argThat(userEvent(LibraryEventType4.EBOOK_REQUESTED, 7L,
+                "Yêu cầu mượn E-Book \"Digital Book\" đã được gửi và đang chờ duyệt.")));
+        verify(eventPublisher).publishEvent(argThat(roleEvent(LibraryEventType4.EBOOK_REQUESTED, "ADMIN",
+                "Có yêu cầu mượn E-Book \"Digital Book\" mới từ reader.")));
     }
 
     @Test
@@ -119,8 +122,8 @@ class EBookBorrowRequest3ServiceTest {
         assertEquals(EBookRequestStatus3.APPROVED, approved.getStatus());
         assertEquals("DRM-ISSUED", approved.getLicenseKey());
         assertEquals("Đã duyệt: hiệu lực 45 ngày, tối đa 6 lượt tải.", approved.getReviewNote());
-        verify(notificationService).notifyUser(7L,
-                "Yêu cầu E-Book \"Digital Book\" đã được duyệt và giấy phép DRM đã được cấp.");
+        verify(eventPublisher).publishEvent(argThat(userEvent(LibraryEventType4.EBOOK_APPROVED, 7L,
+                "Yêu cầu E-Book \"Digital Book\" đã được duyệt và giấy phép DRM đã được cấp.")));
         verify(drmLicenseService).issueLicense(argThat(issue ->
                 issue.getValidDays() == 45 && issue.getMaxDownloads() == 6));
     }
@@ -137,8 +140,7 @@ class EBookBorrowRequest3ServiceTest {
 
         assertThrows(IllegalStateException.class, () -> requestService.approveRequest(5L, 30, 3));
         verify(drmLicenseService, never()).issueLicense(any());
-        verify(notificationService, never()).notifyUser(org.mockito.ArgumentMatchers.anyLong(),
-                org.mockito.ArgumentMatchers.anyString());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test

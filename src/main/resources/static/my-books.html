@@ -650,14 +650,8 @@
                         row.append(status);
                         const actions = document.createElement("td");
                         if (!fine.isPaid) {
-                            const method = document.createElement("select");
-                            method.setAttribute("aria-label", "Phương thức thanh toán");
-                            [["CASH", "Tiền mặt"], ["BANKING", "Chuyển khoản"], ["WALLET", "Ví điện tử"]]
-                                .forEach(([value, label]) => method.add(new Option(label, value)));
-                            const pay = makeElement("button", "module-action", "Ghi nhận đã thanh toán");
-                            pay.type = "button";
-                            pay.addEventListener("click", () => payFine3(fine, method.value, pay));
-                            actions.append(method, pay);
+                            // Chỉ thủ thư (Admin) được xác nhận đã nộp phạt; độc giả nộp tại quầy
+                            actions.append(makeElement("span", "fine-placeholder", "Vui lòng nộp phạt tại quầy thủ thư"));
                         } else {
                             actions.textContent = fine.paymentMethod || "—";
                         }
@@ -667,23 +661,6 @@
                 } catch (error) {
                     body.innerHTML = `<tr><td class="error-state" colspan="5">${escapeHtml(error.message)}</td></tr>`;
                     throw error;
-                }
-            }
-
-            async function payFine3(fine, paymentMethod, button) {
-                if (!window.confirm("Ghi nhận khoản phạt này đã được thanh toán? Hành động này không thực hiện giao dịch thu tiền.")) return;
-                button.disabled = true;
-                try {
-                    await api(`/api/v3/loans/fines/${encodeURIComponent(fine.id)}/pay`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ paymentMethod })
-                    });
-                    showModule3Notice("Đã ghi nhận phương thức thanh toán.", "success");
-                    await loadFines3();
-                } catch (error) {
-                    button.disabled = false;
-                    showModule3Notice(error.message, "error");
                 }
             }
 

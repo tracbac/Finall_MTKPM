@@ -11,6 +11,8 @@ import com.library.digital_library.service.service2.adapter.ExternalBookDto2;
 import com.library.digital_library.service.service2.factory.LibraryItemFactoryProvider2;
 import com.library.digital_library.service.service2.strategy.BookSearchContext2;
 import com.library.digital_library.service.service2.strategy.BookSearchFilter2;
+import com.library.digital_library.service.service4.observer.LibraryEvent4;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,19 +36,22 @@ public class BookCatalogService2 {
     private final LibraryItemFactoryProvider2 factoryProvider;
     private final ExternalBookCatalogPort2 externalCatalogPort;
     private final BookSearchContext2 searchContext;
+    private final ApplicationEventPublisher eventPublisher;
 
     public BookCatalogService2(BookRepository bookRepository,
                                BookPriceService bookPriceService,
                                CatalogBookMetadata2Repository metadataRepository,
                                LibraryItemFactoryProvider2 factoryProvider,
                                ExternalBookCatalogPort2 externalCatalogPort,
-                               BookSearchContext2 searchContext) {
+                               BookSearchContext2 searchContext,
+                               ApplicationEventPublisher eventPublisher) {
         this.bookRepository = bookRepository;
         this.bookPriceService = bookPriceService;
         this.metadataRepository = metadataRepository;
         this.factoryProvider = factoryProvider;
         this.externalCatalogPort = externalCatalogPort;
         this.searchContext = searchContext;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -178,6 +183,9 @@ public class BookCatalogService2 {
             metadataEntity.setGoogleVolumeId(request.getGoogleVolumeId());
         }
         CatalogBookMetadata2 savedMetadata = metadataRepository.save(metadataEntity);
+
+        // 5. Observer Pattern (Thành viên 4): phát sự kiện "sách mới" tới toàn bộ độc giả
+        eventPublisher.publishEvent(LibraryEvent4.newBook(savedBook.getTitle(), savedBook.getAuthor()));
 
         return CatalogBookDetailResponse2.from(savedBook, savedPrice, savedMetadata, item.getUsageInstruction());
     }

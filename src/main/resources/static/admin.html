@@ -1132,6 +1132,17 @@
                         returnButton.type = "button";
                         returnButton.addEventListener("click", () => updateLoan3(loan, "return", returnButton));
                         actions.append(renew, returnButton);
+                    } else if (loan.status === "RETURNED" && Number(loan.fineAmount) > 0 && !loan.finePaid) {
+                        // Sách đã trả trễ, độc giả còn nợ phạt: thủ thư xác nhận khi đã thu tiền tại quầy
+                        const method = document.createElement("select");
+                        method.setAttribute("aria-label", "Phương thức nộp phạt");
+                        [["CASH", "Tiền mặt"], ["BANKING", "Chuyển khoản"], ["WALLET", "Ví điện tử"]]
+                            .forEach(([value, label]) => method.add(new Option(label, value)));
+                        const payButton = makeElement("button", "small-button",
+                            `Xác nhận đã nộp phạt (${formatPrice(loan.fineAmount)})`);
+                        payButton.type = "button";
+                        payButton.addEventListener("click", () => confirmFinePaid3(loan, method.value, payButton));
+                        actions.append(method, payButton);
                     } else {
                         actions.textContent = "—";
                     }
@@ -1153,6 +1164,28 @@
                         } : {})
                     });
                     showInlineNotice("loan3-notice", action === "renew" ? "Đã gia hạn thêm 7 ngày." : "Đã xác nhận trả sách.", "success");
+                    await loadLoans3();
+                } catch (error) {
+                    button.disabled = false;
+                    showInlineNotice("loan3-notice", error.message, "error");
+                }
+            }
+
+            async function confirmFinePaid3(loan, paymentMethod, button) {
+                if (!window.confirm(`Xác nhận độc giả "${loan.user?.username || ""}" đã nộp phạt cho sách "${loan.book?.title || ""}"?`)) return;
+                button.disabled = true;
+                try {
+                    const unpaid = await api(`/api/v3/loans/fines/user/${encodeURIComponent(loan.user?.id)}/unpaid`);
+                    const fines = (Array.isArray(unpaid) ? unpaid : []).filter(fine => fine.loanRecord?.id === loan.id);
+                    if (!fines.length) throw new Error("Không tìm thấy biên lai phạt chưa thanh toán cho phiếu mượn này.");
+                    for (const fine of fines) {
+                        await api(`/api/v3/loans/fines/${encodeURIComponent(fine.id)}/pay`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ paymentMethod })
+                        });
+                    }
+                    showInlineNotice("loan3-notice", "Đã xác nhận độc giả nộp phạt. Quyền mượn/tải tài liệu được mở lại.", "success");
                     await loadLoans3();
                 } catch (error) {
                     button.disabled = false;
