@@ -88,13 +88,18 @@ public class SecurityConfig {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 }))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/index.html", "/auth.html", "/admin.html", "/my-books.html", "/favicon.ico").permitAll()
+                .requestMatchers("/", "/index.html", "/books.html", "/about.html", "/auth.html", "/admin.html", "/my-books.html", "/favicon.ico").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/notifications/admin", "/api/notifications/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/v3/drm/issue", "/api/v3/drm/revoke").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v3/drm/user/**", "/api/v3/drm/license/**",
                         "/api/v3/ebooks/logs/user/**").hasRole("ADMIN")
+                // Nghiệp vụ của thủ thư: cho mượn tại quầy, xác nhận trả sách, rà soát quá hạn, xác nhận đã nộp phạt.
+                // Độc giả chỉ được xem phiếu mượn/khoản phạt của mình và gia hạn.
+                .requestMatchers(HttpMethod.POST, "/api/v3/loans/borrow", "/api/v3/loans/check-overdue",
+                        "/api/v3/loans/*/return", "/api/v3/loans/fines/*/pay").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v3/loans/all", "/api/v3/loans/overdue").hasRole("ADMIN")
                 .requestMatchers("/api/borrows/**").authenticated()
                 .anyRequest().authenticated()
             );

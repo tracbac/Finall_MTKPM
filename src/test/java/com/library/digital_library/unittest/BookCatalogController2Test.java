@@ -55,7 +55,7 @@ public class BookCatalogController2Test {
                 .build();
 
         // Anonymous Subclass thay thế Mockito để tránh giới hạn Java 25 class modification
-        BookCatalogService2 stubService = new BookCatalogService2(null, null, null, null, null, null) {
+        BookCatalogService2 stubService = new BookCatalogService2(null, null, null, null, null, null, null) {
             @Override
             public List<CatalogBookDetailResponse2> searchCatalog(String keyword, String author, String category,
                                                                  Boolean onlyAvailable, String strategyKey) {

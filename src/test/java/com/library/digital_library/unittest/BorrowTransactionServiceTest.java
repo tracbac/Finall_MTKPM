@@ -1,5 +1,6 @@
 package com.library.digital_library.unittest;
 
+import org.springframework.context.ApplicationEventPublisher;
 import com.library.digital_library.dto.BorrowRequest;
 import com.library.digital_library.dto.BorrowTransactionResponse;
 import com.library.digital_library.model.Book;
@@ -9,7 +10,7 @@ import com.library.digital_library.repository.BookRepository;
 import com.library.digital_library.repository.BorrowTransactionRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.service.BorrowTransactionService;
-import com.library.digital_library.service.NotificationService;
+import com.library.digital_library.service.service4.observer.LibraryEventType4;
 import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static com.library.digital_library.unittest.unittest4.LibraryEventMatchers4.userEvent;
+import static com.library.digital_library.unittest.unittest4.LibraryEventMatchers4.roleEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,7 +44,7 @@ class BorrowTransactionServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private NotificationService notificationService;
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private BorrowTransactionService transactionService;
@@ -73,10 +77,10 @@ class BorrowTransactionServiceTest {
         assertEquals("PENDING", transaction.getStatus());
         assertEquals(4, book.getQuantity());
         assertEquals(transaction.getBorrowDate().plusDays(14), transaction.getDueDate());
-        verify(notificationService).notifyUser(1L,
-                "Yêu cầu mượn sách \"Clean Code\" đã được gửi và đang chờ duyệt.");
-        verify(notificationService).notifyRole("ADMIN",
-                "Có yêu cầu mượn sách \"Clean Code\" mới từ reader.");
+        verify(eventPublisher).publishEvent(argThat(userEvent(LibraryEventType4.BORROW_REQUESTED, 1L,
+                "Yêu cầu mượn sách \"Clean Code\" đã được gửi và đang chờ duyệt.")));
+        verify(eventPublisher).publishEvent(argThat(roleEvent(LibraryEventType4.BORROW_REQUESTED, "ADMIN",
+                "Có yêu cầu mượn sách \"Clean Code\" mới từ reader.")));
     }
 
     @Test
@@ -100,9 +104,11 @@ class BorrowTransactionServiceTest {
         when(bookRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(book));
 
         assertEquals("BORROWED", transactionService.approveTransaction(20L).getStatus());
-        verify(notificationService).notifyUser(1L, "Yêu cầu mượn sách \"Clean Code\" đã được duyệt.");
+        verify(eventPublisher).publishEvent(argThat(userEvent(LibraryEventType4.BORROW_APPROVED, 1L,
+                "Yêu cầu mượn sách \"Clean Code\" đã được duyệt.")));
         assertEquals("RETURNED", transactionService.returnBook(20L).getStatus());
-        verify(notificationService).notifyUser(1L, "Sách \"Clean Code\" đã được ghi nhận trả thành công.");
+        verify(eventPublisher).publishEvent(argThat(userEvent(LibraryEventType4.BORROW_RETURNED, 1L,
+                "Sách \"Clean Code\" đã được ghi nhận trả thành công.")));
         assertEquals(5, book.getQuantity());
     }
 
@@ -119,8 +125,8 @@ class BorrowTransactionServiceTest {
 
         assertEquals(15000.0, returned.getFineAmount());
         assertEquals(LocalDate.now(), returned.getReturnDate());
-        verify(notificationService).notifyUser(1L,
-                "Sách \"Clean Code\" đã được trả trễ. Phí quá hạn: 15000.0 đ.");
+        verify(eventPublisher).publishEvent(argThat(userEvent(LibraryEventType4.BORROW_RETURNED, 1L,
+                "Sách \"Clean Code\" đã được trả trễ. Phí quá hạn: 15000.0 đ.")));
     }
 
     @Test
@@ -136,8 +142,8 @@ class BorrowTransactionServiceTest {
 
         assertEquals(dueDate.plusDays(7), renewed.getDueDate());
         assertEquals(1, renewed.getRenewalCount());
-        verify(notificationService).notifyUser(1L,
-                "Đã gia hạn sách \"Clean Code\" đến ngày " + dueDate.plusDays(7) + ".");
+        verify(eventPublisher).publishEvent(argThat(userEvent(LibraryEventType4.BORROW_APPROVED, 1L,
+                "Đã gia hạn sách \"Clean Code\" đến ngày " + dueDate.plusDays(7) + ".")));
     }
 
     @Test
@@ -209,7 +215,8 @@ class BorrowTransactionServiceTest {
 
         assertEquals("REJECTED", rejected.getStatus());
         assertEquals(5, book.getQuantity());
-        verify(notificationService).notifyUser(1L, "Yêu cầu mượn sách \"Clean Code\" đã bị từ chối.");
+        verify(eventPublisher).publishEvent(argThat(userEvent(LibraryEventType4.BORROW_REJECTED, 1L,
+                "Yêu cầu mượn sách \"Clean Code\" đã bị từ chối.")));
     }
 
     @Test

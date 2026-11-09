@@ -2,6 +2,7 @@ package com.library.digital_library.service.service3;
 
 import com.library.digital_library.model.User;
 import com.library.digital_library.model.model3.*;
+import com.library.digital_library.repository.BorrowTransactionRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.repository.repository3.DownloadLog3Repository;
 import com.library.digital_library.repository.repository3.DrmLicense3Repository;
@@ -32,6 +33,7 @@ public class EBookDownloadProxy3 implements EBookDownloadService3 {
     private final LoanRecord3Repository loanRecordRepository;
     private final UserRepository userRepository;
     private final DownloadLog3Repository downloadLogRepository;
+    private final BorrowTransactionRepository borrowTransactionRepository;
 
     public EBookDownloadProxy3(
             @Qualifier("realEBookDownloadService3") EBookDownloadService3 realService,
@@ -39,17 +41,21 @@ public class EBookDownloadProxy3 implements EBookDownloadService3 {
             FineReceipt3Repository fineReceiptRepository,
             LoanRecord3Repository loanRecordRepository,
             UserRepository userRepository,
-            DownloadLog3Repository downloadLogRepository) {
+            DownloadLog3Repository downloadLogRepository,
+            BorrowTransactionRepository borrowTransactionRepository) {
         this.realService = realService;
         this.drmLicenseRepository = drmLicenseRepository;
         this.fineReceiptRepository = fineReceiptRepository;
         this.loanRecordRepository = loanRecordRepository;
         this.userRepository = userRepository;
         this.downloadLogRepository = downloadLogRepository;
+        this.borrowTransactionRepository = borrowTransactionRepository;
     }
 
     @Override
-    @Transactional
+    // Không hoàn tác khi Proxy TỪ CHỐI: nhật ký DENIED và trạng thái EXPIRED phải được lưu lại.
+    // Các lỗi khác (vd. không đọc được tệp) vẫn hoàn tác để lượt tải không bị trừ oan.
+    @Transactional(noRollbackFor = {SecurityException.class, DownloadLimitExceededException.class})
     public DownloadResult3 downloadEBook(DownloadRequest3 request) {
         log.info("[Proxy Pattern] Intercepting E-Book download request for User ID: {}, Book ID: {}",
                 request.getUserId(), request.getBookId());
@@ -69,7 +75,9 @@ public class EBookDownloadProxy3 implements EBookDownloadService3 {
         }
 
         // 3. Kiểm tra chặn truy cập do đang giữ sách quá hạn
-        long overdueLoans = loanRecordRepository.countByUserIdAndStatus(user.getId(), LoanStatus3.OVERDUE);
+        // Đếm cả phiếu mượn tại quầy (LoanRecord3) và yêu cầu mượn trực tuyến (BorrowTransaction) đã quá hạn
+        long overdueLoans = loanRecordRepository.countByUserIdAndStatus(user.getId(), LoanStatus3.OVERDUE)
+                + borrowTransactionRepository.countOverdueBorrows(user.getId(), LocalDate.now());
         if (overdueLoans > 0) {
             logAudit(request, "DENIED", "Người dùng đang có " + overdueLoans + " sách mượn quá hạn chưa trả");
             throw new SecurityException("[Proxy từ chối] Bạn đang có sách mượn quá hạn chưa hoàn trả. Quyền tải tài liệu bị tạm khóa!");

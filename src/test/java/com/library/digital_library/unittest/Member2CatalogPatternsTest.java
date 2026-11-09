@@ -18,6 +18,8 @@ import com.library.digital_library.service.service2.factory.LibraryItemCreator2;
 import com.library.digital_library.service.service2.factory.LibraryItemFactoryProvider2;
 import com.library.digital_library.service.service2.factory.PhysicalBookCreator2;
 import com.library.digital_library.service.service2.strategy.*;
+import com.library.digital_library.service.service4.observer.LibraryEvent4;
+import com.library.digital_library.service.service4.observer.LibraryEventType4;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -368,6 +371,9 @@ public class Member2CatalogPatternsTest {
         private ExternalBookCatalogPort2 externalCatalogPort;
 
         private BookPriceService bookPriceService;
+
+        // Ghi lại các sự kiện Observer được phát ra (Thành viên 4)
+        private final List<Object> publishedEvents = new ArrayList<>();
         private BookCatalogService2 catalogService;
 
         @BeforeEach
@@ -416,7 +422,8 @@ public class Member2CatalogPatternsTest {
                     metadataRepository,
                     factoryProvider,
                     externalCatalogPort,
-                    searchContext
+                    searchContext,
+                    publishedEvents::add
             );
         }
 
@@ -473,6 +480,13 @@ public class Member2CatalogPatternsTest {
             verify(externalCatalogPort, times(1)).findBookByIsbn("9780321125217");
             verify(bookRepository, times(1)).save(any(Book.class));
             verify(metadataRepository, times(1)).save(any(CatalogBookMetadata2.class));
+
+            // 6. Observer Pattern: nhập sách thành công phải phát đúng 1 sự kiện NEW_BOOK tới độc giả
+            assertEquals(1, publishedEvents.size());
+            LibraryEvent4 event = assertInstanceOf(LibraryEvent4.class, publishedEvents.get(0));
+            assertEquals(LibraryEventType4.NEW_BOOK, event.type());
+            assertEquals("USER", event.role());
+            assertTrue(event.message().contains("Domain-Driven Design"));
         }
 
         @Test

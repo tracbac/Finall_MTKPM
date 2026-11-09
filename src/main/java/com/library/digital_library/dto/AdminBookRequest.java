@@ -35,4 +35,8 @@ public class AdminBookRequest {
     private BigDecimal rentalPrice;
 
     private MultipartFile imageFile;
+
+    private String imageUrl;
+
+    private String itemType;
 }

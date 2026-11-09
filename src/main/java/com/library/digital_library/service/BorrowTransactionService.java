@@ -7,10 +7,13 @@ import com.library.digital_library.model.User;
 import com.library.digital_library.repository.BookRepository;
 import com.library.digital_library.repository.BorrowTransactionRepository;
 import com.library.digital_library.repository.UserRepository;
+import com.library.digital_library.service.service4.observer.LibraryEvent4;
+import com.library.digital_library.service.service4.observer.LibraryEventType4;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,17 +32,18 @@ public class BorrowTransactionService {
     private final BorrowTransactionRepository transactionRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    // Subject trong Observer Pattern: chỉ phát sự kiện, không phụ thuộc kênh thông báo cụ thể
+    private final ApplicationEventPublisher eventPublisher;
 
     public BorrowTransactionService(
             BorrowTransactionRepository transactionRepository,
             BookRepository bookRepository,
             UserRepository userRepository,
-            NotificationService notificationService) {
+            ApplicationEventPublisher eventPublisher) {
         this.transactionRepository = transactionRepository;
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
-        this.notificationService = notificationService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -66,10 +70,10 @@ public class BorrowTransactionService {
         transaction.setFineAmount(0.0);
         transaction.setRenewalCount(0);
         BorrowTransaction savedTransaction = transactionRepository.save(transaction);
-        notificationService.notifyUser(user.getId(),
-                "Yêu cầu mượn sách \"" + book.getTitle() + "\" đã được gửi và đang chờ duyệt.");
-        notificationService.notifyRole("ADMIN",
-                "Có yêu cầu mượn sách \"" + book.getTitle() + "\" mới từ " + user.getUsername() + ".");
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.BORROW_REQUESTED, user.getId(),
+                "Yêu cầu mượn sách \"" + book.getTitle() + "\" đã được gửi và đang chờ duyệt."));
+        eventPublisher.publishEvent(LibraryEvent4.toRole(LibraryEventType4.BORROW_REQUESTED, "ADMIN",
+                "Có yêu cầu mượn sách \"" + book.getTitle() + "\" mới từ " + user.getUsername() + "."));
         return savedTransaction;
     }
 
@@ -79,8 +83,8 @@ public class BorrowTransactionService {
         requireStatus(transaction, PENDING, "Only pending requests can be approved");
         transaction.setStatus(BORROWED);
         BorrowTransaction savedTransaction = transactionRepository.save(transaction);
-        notificationService.notifyUser(transaction.getUser().getId(),
-                "Yêu cầu mượn sách \"" + transaction.getBook().getTitle() + "\" đã được duyệt.");
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.BORROW_APPROVED, transaction.getUser().getId(),
+                "Yêu cầu mượn sách \"" + transaction.getBook().getTitle() + "\" đã được duyệt."));
         return savedTransaction;
     }
 
@@ -94,8 +98,8 @@ public class BorrowTransactionService {
         book.setQuantity(book.getQuantity() + 1);
         transaction.setStatus(REJECTED);
         BorrowTransaction savedTransaction = transactionRepository.save(transaction);
-        notificationService.notifyUser(transaction.getUser().getId(),
-                "Yêu cầu mượn sách \"" + transaction.getBook().getTitle() + "\" đã bị từ chối.");
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.BORROW_REJECTED, transaction.getUser().getId(),
+                "Yêu cầu mượn sách \"" + transaction.getBook().getTitle() + "\" đã bị từ chối."));
         return savedTransaction;
     }
 
@@ -117,7 +121,7 @@ public class BorrowTransactionService {
                 ? "Sách \"" + transaction.getBook().getTitle() + "\" đã được trả trễ. Phí quá hạn: "
                         + fineAmount + " đ."
                 : "Sách \"" + transaction.getBook().getTitle() + "\" đã được ghi nhận trả thành công.";
-        notificationService.notifyUser(transaction.getUser().getId(), message);
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.BORROW_RETURNED, transaction.getUser().getId(), message));
         return savedTransaction;
     }
 
@@ -139,7 +143,7 @@ public class BorrowTransactionService {
     private BorrowTransaction renewTransaction(BorrowTransaction transaction) {
         requireStatus(transaction, BORROWED, "Only borrowed books can be renewed");
         LocalDate today = LocalDate.now();
-        if (today.isAfter(transaction.getDueDate())) {
+        if (transaction.getDueDate() != null && today.isAfter(transaction.getDueDate())) {
             throw new IllegalStateException("Sách đã quá hạn, không thể gia hạn.");
         }
 
@@ -151,9 +155,9 @@ public class BorrowTransactionService {
         transaction.setDueDate(transaction.getDueDate().plusDays(DEFAULT_RENEW_DAYS));
         transaction.setRenewalCount(renewalCount + 1);
         BorrowTransaction savedTransaction = transactionRepository.save(transaction);
-        notificationService.notifyUser(transaction.getUser().getId(),
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.BORROW_APPROVED, transaction.getUser().getId(),
                 "Đã gia hạn sách \"" + transaction.getBook().getTitle() + "\" đến ngày "
-                        + transaction.getDueDate() + ".");
+                        + transaction.getDueDate() + "."));
         return savedTransaction;
     }
 

@@ -89,6 +89,29 @@
         .feature-card p { margin: 0 0 12px; color: var(--muted); font-size: 10px; line-height: 1.6; }
         .feature-card .unavailable-badge { margin-top: auto; }
         .unavailable-badge { display: inline-flex; align-items: center; align-self: flex-start; min-height: 22px; padding: 0 8px; border-radius: 999px; background: #f3efe5; color: var(--amber); font-size: 9px; font-weight: 700; }
+        .placeholder-action { min-height: 31px; align-self: flex-start; margin: auto 0 10px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: #f1f2ee; color: #858e87; cursor: not-allowed; font-size: 9px; font-weight: 700; }
+        .fine-placeholder { color: var(--amber); font-size: 9px; font-weight: 700; }
+        
+        /* Tab Navigation */
+        .user-tabs { display: flex; gap: 8px; margin-bottom: 22px; border-bottom: 1px solid var(--line); padding-bottom: 12px; flex-wrap: wrap; }
+        .user-tab { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: #526057; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .18s ease; }
+        .user-tab:hover { border-color: #aab9ac; color: var(--green); }
+        .user-tab.active { background: var(--green); border-color: var(--green); color: #fff; box-shadow: 0 4px 12px rgba(53,93,67,.18); }
+        .tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #e2e6de; color: var(--ink); font-size: 10px; font-weight: 700; }
+        .user-tab.active .tab-badge { background: rgba(255,255,255,.28); color: #fff; }
+        .tab-badge.fine { background: #ffebee; color: #c62828; }
+        .user-tab.active .tab-badge.fine { background: #c62828; color: #fff; }
+        .tab-badge.notif { background: #e3f2fd; color: #1565c0; }
+        .user-tab.active .tab-badge.notif { background: #1565c0; color: #fff; }
+        .summary-card.clickable { cursor: pointer; transition: all .2s ease; }
+        .summary-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.04); border-color: var(--green); }
+        .download-btn-highlight { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 14px; border-radius: 8px; background: #2e7d32; color: #fff; border: none; font-size: 11px; font-weight: 700; cursor: pointer; transition: background .15s ease; box-shadow: 0 2px 6px rgba(46,125,50,.25); }
+        .download-btn-highlight:hover { background: #1b5e20; }
+        .download-btn-highlight:disabled { background: #a5d6a7; cursor: not-allowed; box-shadow: none; }
+        .book-title-cell { display: flex; align-items: center; gap: 10px; }
+        .book-thumb { width: 28px; height: 38px; object-fit: cover; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .book-thumb-placeholder { width: 28px; height: 38px; border-radius: 4px; background: #e8ece7; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; color: var(--green); font-weight: bold; }
+        .tab-pane[hidden] { display: none !important; }
         footer { padding: 20px 0 25px; border-top: 1px solid var(--line); color: #808981; font-size: 10px; }
         .footer-inner { display: flex; justify-content: space-between; gap: 12px; }
         @media (max-width: 650px) {
@@ -118,7 +141,9 @@
             </a>
             <nav class="header-actions" aria-label="Điều hướng">
                 <a class="header-link" href="/">Trang chủ</a>
-                <a class="header-link" href="/#books">Tìm sách</a>
+                <a class="header-link" href="/books.html">Kho sách</a>
+                <a class="header-link" href="/about.html">Giới thiệu</a>
+                <button class="header-link" id="header-logout-btn" type="button" style="cursor: pointer; background: transparent;">Đăng xuất</button>
             </nav>
         </div>
     </header>
@@ -130,73 +155,95 @@
                 <p class="intro">Theo dõi yêu cầu mượn, thời hạn trả và lịch sử đọc sách của bạn.</p>
             </section>
             <div class="summary" aria-label="Tóm tắt sách mượn">
-                <article class="summary-card"><span>Chờ duyệt</span><strong id="pending-count">—</strong></article>
-                <article class="summary-card"><span>Đang mượn</span><strong id="active-count">—</strong></article>
-                <article class="summary-card"><span>Đã hoàn tất</span><strong id="completed-count">—</strong></article>
+                <article class="summary-card clickable" id="card-pending" title="Bấm để xem danh sách chờ duyệt"><span>Chờ duyệt</span><strong id="pending-count">—</strong></article>
+                <article class="summary-card clickable" id="card-active" title="Bấm để xem sách đang mượn"><span>Đang mượn</span><strong id="active-count">—</strong></article>
+                <article class="summary-card clickable" id="card-completed" title="Bấm để xem sách đã hoàn tất"><span>Đã hoàn tất</span><strong id="completed-count">—</strong></article>
             </div>
             <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
-            <section class="panel" aria-labelledby="history-title">
-                <div class="panel-head">
-                    <div><h2 id="history-title">Lịch sử mượn</h2><p id="history-count">Đang tải giao dịch...</p></div>
-                    <select class="filter" id="status-filter" aria-label="Lọc giao dịch theo trạng thái">
-                        <option value="">Tất cả trạng thái</option>
-                        <option value="PENDING">Chờ duyệt</option>
-                        <option value="BORROWED">Đang mượn</option>
-                        <option value="RETURNED">Đã trả</option>
-                        <option value="REJECTED">Từ chối</option>
-                        <option value="CANCELED">Đã hủy</option>
-                    </select>
-                </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>Tên sách</th><th>Ngày yêu cầu</th><th>Hạn trả</th><th>Ngày trả</th><th>Trạng thái</th><th>Phí quá hạn</th><th>Thao tác</th></tr></thead>
-                        <tbody id="history-table"><tr><td class="loading" colspan="7">Đang tải lịch sử...</td></tr></tbody>
-                    </table>
-                </div>
-                <p class="hint">Giao dịch tại đây hỗ trợ gia hạn tối đa 2 lần và hiển thị phí quá hạn ước tính; khoản phí được chốt khi trả sách.</p>
-            </section>
-            <section class="panel" style="margin-top:16px">
-                <div class="panel-head"><div><h2>Giao dịch mượn mới</h2><p>Gia hạn và theo dõi sách từ module Loan.</p></div><button class="module-action" id="refresh-loans3" type="button">Tải lại</button></div>
-                <div class="notice" id="module3-notice" role="status" aria-live="polite" hidden></div>
-                <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Ngày mượn</th><th>Hạn trả</th><th>Trạng thái</th><th>Phí</th><th>Thao tác</th></tr></thead><tbody id="loans3-table"><tr><td class="loading" colspan="6">Đang tải giao dịch...</td></tr></tbody></table></div>
-            </section>
-            <section class="panel" style="margin-top:16px">
-                <div class="panel-head"><div><h2>Phí quá hạn</h2><p>Tra cứu biên lai và ghi nhận khoản phạt đã thanh toán.</p></div></div>
-                <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Ngày quá hạn</th><th>Phí</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="fines3-table"><tr><td class="loading" colspan="5">Đang tải biên lai...</td></tr></tbody></table></div>
-                <p class="hint">Ghi nhận tại đây không thu tiền qua cổng thanh toán; chỉ lưu phương thức đã thanh toán.</p>
-            </section>
-            <section class="panel" style="margin-top:16px">
-                <div class="panel-head"><div><h2>Yêu cầu mượn E-Book</h2><p>Gửi yêu cầu để Admin duyệt và cấp giấy phép DRM.</p></div></div>
-                <div class="notice" id="ebook-request-notice" role="status" aria-live="polite" hidden></div>
-                <form id="ebook-request-form" class="ebook-request-form">
-                    <label class="sr-only" for="ebook-request-book">Chọn sách E-Book</label>
-                    <select id="ebook-request-book" name="bookId" required><option value="">Đang tải danh mục sách...</option></select>
-                    <button class="module-action" id="ebook-request-submit" type="submit">Gửi yêu cầu</button>
-                </form>
-                <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Ngày yêu cầu</th><th>Trạng thái</th><th>Phản hồi</th><th>Giấy phép</th><th>Thao tác</th></tr></thead><tbody id="ebook-requests-table"><tr><td class="loading" colspan="6">Đang tải yêu cầu...</td></tr></tbody></table></div>
-            </section>
-            <section class="panel" style="margin-top:16px">
-                <div class="panel-head"><div><h2>E-Book &amp; bản quyền số</h2><p>Các giấy phép DRM được cấp cho tài khoản của bạn.</p></div><button class="module-action" id="refresh-licenses3" type="button">Tải lại</button></div>
-                <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Mã giấy phép</th><th>Hạn dùng</th><th>Lượt tải</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="licenses3-table"><tr><td class="loading" colspan="6">Đang tải giấy phép...</td></tr></tbody></table></div>
-                <p class="hint">Tệp PDF được lưu riêng tư. Mỗi lượt tải chỉ được cấp khi giấy phép DRM còn hiệu lực và chưa hết hạn mức.</p>
-            </section>
-            <section class="panel" style="margin-top:16px">
-                <div class="panel-head"><div><h2>Nhật ký truy cập E-Book</h2><p>Lịch sử các yêu cầu tải được DRM ghi nhận.</p></div></div>
-                <div class="table-wrap"><table><thead><tr><th>Thời điểm</th><th>Mã giấy phép</th><th>Kết quả</th><th>Chi tiết</th></tr></thead><tbody id="download-logs3-table"><tr><td class="loading" colspan="4">Đang tải nhật ký...</td></tr></tbody></table></div>
-            </section>
-            <section class="panel" style="margin-top:16px" aria-labelledby="notifications-title">
-                <div class="panel-head">
-                    <div><h2 id="notifications-title">Thông báo của tôi</h2><p id="notifications-count">Đang tải thông báo...</p></div>
-                    <div class="header-actions">
-                        <button class="module-action" id="mark-all-notifications-read" type="button">Đánh dấu tất cả đã đọc</button>
-                        <button class="module-action" id="refresh-notifications" type="button">Tải lại</button>
+            <!-- THANH ĐIỀU HƯỚNG TAB -->
+            <div class="user-tabs" role="tablist">
+                <button class="user-tab active" role="tab" id="tab-btn-borrows" type="button">
+                    <span>📖</span> Sách đang mượn <span class="tab-badge" id="badge-borrows-count">0</span>
+                </button>
+                <button class="user-tab" role="tab" id="tab-btn-ebooks" type="button">
+                    <span>💻</span> Tủ sách E-Book &amp; DRM <span class="tab-badge ebook" id="badge-ebooks-count">0</span>
+                </button>
+                <button class="user-tab" role="tab" id="tab-btn-notifications" type="button">
+                    <span>🔔</span> Thông báo <span class="tab-badge notif" id="badge-notifications-count" style="display:none">0</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: SÁCH MƯỢN (SÁCH IN & GIA HẠN) -->
+            <div class="tab-pane" id="tab-pane-borrows">
+                <section class="panel" aria-labelledby="history-title">
+                    <div class="panel-head">
+                        <div><h2 id="history-title">Danh sách mượn &amp; Lịch sử</h2><p id="history-count">Đang tải giao dịch...</p></div>
+                        <select class="filter" id="status-filter" aria-label="Lọc giao dịch theo trạng thái">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="PENDING">Chờ duyệt</option>
+                            <option value="BORROWED">Đang mượn</option>
+                            <option value="RETURNED">Đã trả</option>
+                            <option value="REJECTED">Từ chối</option>
+                            <option value="CANCELED">Đã hủy</option>
+                        </select>
                     </div>
-                </div>
-                <div class="notice" id="notifications-notice" role="status" aria-live="polite" hidden></div>
-                <div class="notification-list" id="notifications-list" aria-live="polite">
-                    <p class="notification-empty">Đang tải thông báo...</p>
-                </div>
-            </section>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Tên sách</th><th>Ngày yêu cầu</th><th>Hạn trả</th><th>Ngày trả</th><th>Trạng thái</th><th>Phí quá hạn</th><th>Thao tác</th></tr></thead>
+                            <tbody id="history-table"><tr><td class="loading" colspan="7">Đang tải lịch sử...</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+                <section class="panel" style="margin-top:16px">
+                    <div class="panel-head"><div><h2>Gia hạn mượn sách (Module Loan)</h2><p>Gia hạn thêm thời gian đọc sách.</p></div><button class="module-action" id="refresh-loans3" type="button">Tải lại</button></div>
+                    <div class="notice" id="module3-notice" role="status" aria-live="polite" hidden></div>
+                    <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Ngày mượn</th><th>Hạn trả</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="loans3-table"><tr><td class="loading" colspan="5">Đang tải giao dịch...</td></tr></tbody></table></div>
+                </section>
+            </div>
+
+            <!-- TAB 2: TỦ SÁCH E-BOOK & DRM -->
+            <div class="tab-pane" id="tab-pane-ebooks" hidden>
+                <section class="panel">
+                    <div class="panel-head"><div><h2>Tủ E-Book của tôi (Bản quyền số DRM)</h2><p>Các tài liệu điện tử đã được cấp phép đọc và tải tệp PDF.</p></div><button class="module-action" id="refresh-licenses3" type="button">Tải lại</button></div>
+                    <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Mã giấy phép</th><th>Hạn dùng</th><th>Lượt tải</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="licenses3-table"><tr><td class="loading" colspan="6">Đang tải giấy phép...</td></tr></tbody></table></div>
+                    <p class="hint">Tệp PDF được bảo vệ bản quyền DRM. Mỗi lần tải, tài liệu sẽ tự động được đóng dấu bảo mật cá nhân (Watermark).</p>
+                </section>
+                <section class="panel" style="margin-top:16px">
+                    <div class="panel-head"><div><h2>Yêu cầu mượn E-Book</h2><p>Gửi yêu cầu mượn tài liệu điện tử để thủ thư duyệt cấp phép DRM.</p></div></div>
+                    <div class="notice" id="ebook-request-notice" role="status" aria-live="polite" hidden></div>
+                    <form id="ebook-request-form" class="ebook-request-form">
+                        <label class="sr-only" for="ebook-request-book">Chọn sách E-Book</label>
+                        <select id="ebook-request-book" name="bookId" required><option value="">Đang tải danh mục sách...</option></select>
+                        <button class="module-action" id="ebook-request-submit" type="submit">Gửi yêu cầu E-Book</button>
+                    </form>
+                    <div class="table-wrap"><table><thead><tr><th>Sách</th><th>Ngày yêu cầu</th><th>Trạng thái</th><th>Phản hồi</th><th>Giấy phép</th><th>Thao tác</th></tr></thead><tbody id="ebook-requests-table"><tr><td class="loading" colspan="6">Đang tải yêu cầu...</td></tr></tbody></table></div>
+                </section>
+                <section class="panel" style="margin-top:16px">
+                    <div class="panel-head" id="toggle-logs-head" style="cursor:pointer">
+                        <div><h2>Nhật ký tải E-Book (Audit Log) <small style="font-size:11px;color:var(--muted);font-weight:normal">(Bấm để xem/ẩn)</small></h2><p>Lịch sử các lần truy xuất tài liệu DRM.</p></div>
+                    </div>
+                    <div id="logs-table-wrap" hidden>
+                        <div class="table-wrap"><table><thead><tr><th>Thời điểm</th><th>Mã giấy phép</th><th>Kết quả</th><th>Chi tiết</th></tr></thead><tbody id="download-logs3-table"><tr><td class="loading" colspan="4">Đang tải nhật ký...</td></tr></tbody></table></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB 3: THÔNG BÁO -->
+            <div class="tab-pane" id="tab-pane-notifications" hidden>
+                <section class="panel" aria-labelledby="notifications-title">
+                    <div class="panel-head">
+                        <div><h2 id="notifications-title">Thông báo của tôi</h2><p id="notifications-count">Đang tải thông báo...</p></div>
+                        <div class="header-actions">
+                            <button class="module-action" id="mark-all-notifications-read" type="button">Đánh dấu tất cả đã đọc</button>
+                            <button class="module-action" id="refresh-notifications" type="button">Tải lại</button>
+                        </div>
+                    </div>
+                    <div class="notice" id="notifications-notice" role="status" aria-live="polite" hidden></div>
+                    <div class="notification-list" id="notifications-list" aria-live="polite">
+                        <p class="notification-empty">Đang tải thông báo...</p>
+                    </div>
+                </section>
+            </div>
         </div>
     </main>
     <footer><div class="shell footer-inner"><span>© <span id="current-year"></span> Thư viện Mộc</span><span>Đọc một chút, hiểu thêm nhiều.</span></div></footer>
@@ -217,6 +264,53 @@
             }
 
             document.getElementById("current-year").textContent = new Date().getFullYear();
+            document.getElementById("header-logout-btn")?.addEventListener("click", () => {
+                clearSession();
+                window.location.href = "/";
+            });
+
+            // Chuyển đổi Tab điều hướng
+            const userTabs = [
+                { btn: document.getElementById("tab-btn-borrows"), pane: document.getElementById("tab-pane-borrows") },
+                { btn: document.getElementById("tab-btn-ebooks"), pane: document.getElementById("tab-pane-ebooks") },
+                { btn: document.getElementById("tab-btn-notifications"), pane: document.getElementById("tab-pane-notifications") }
+            ];
+
+            function switchUserTab(targetBtn) {
+                userTabs.forEach(({ btn, pane }) => {
+                    const isActive = btn === targetBtn;
+                    if (btn) btn.classList.toggle("active", isActive);
+                    if (pane) pane.hidden = !isActive;
+                });
+            }
+
+            userTabs.forEach(({ btn }) => {
+                btn?.addEventListener("click", () => switchUserTab(btn));
+            });
+
+            // Click vào các thẻ tóm tắt trên đầu để chuyển nhanh tab và lọc trạng thái
+            document.getElementById("card-pending")?.addEventListener("click", () => {
+                switchUserTab(document.getElementById("tab-btn-borrows"));
+                statusFilter.value = "PENDING";
+                renderTransactions();
+            });
+            document.getElementById("card-active")?.addEventListener("click", () => {
+                switchUserTab(document.getElementById("tab-btn-borrows"));
+                statusFilter.value = "BORROWED";
+                renderTransactions();
+            });
+            document.getElementById("card-completed")?.addEventListener("click", () => {
+                switchUserTab(document.getElementById("tab-btn-borrows"));
+                statusFilter.value = "RETURNED";
+                renderTransactions();
+            });
+
+            // Mở/Đóng bảng nhật ký tải E-Book
+            document.getElementById("toggle-logs-head")?.addEventListener("click", () => {
+                const wrap = document.getElementById("logs-table-wrap");
+                if (wrap) wrap.hidden = !wrap.hidden;
+            });
+
             statusFilter.addEventListener("change", renderTransactions);
             document.getElementById("refresh-loans3").addEventListener("click", loadModule3);
             document.getElementById("refresh-licenses3").addEventListener("click", loadLicenses3);
@@ -236,7 +330,7 @@
             }
 
             async function loadHistory() {
-                transactionsTable.innerHTML = '<tr><td class="loading" colspan="7">Đang tải lịch sử...</td></tr>';
+                transactionsTable.innerHTML = '<tr><td class="loading" colspan="6">Đang tải lịch sử...</td></tr>';
                 try {
                     const currentUser = await api("/api/auth/me");
                     userId = currentUser.id;
@@ -257,7 +351,7 @@
                     await loadModule3();
                 } catch (error) {
                     console.error("Không thể tải lịch sử mượn:", error);
-                    transactionsTable.innerHTML = `<tr><td class="error-state" colspan="7">${escapeHtml(error.message || "Không thể kết nối máy chủ.")}</td></tr>`;
+                    transactionsTable.innerHTML = `<tr><td class="error-state" colspan="6">${escapeHtml(error.message || "Không thể kết nối máy chủ.")}</td></tr>`;
                     document.getElementById("history-count").textContent = "Không tải được lịch sử";
                 }
             }
@@ -281,6 +375,11 @@
                 const unreadCount = notifications.filter(notification => !notification.isRead).length;
                 document.getElementById("notifications-count").textContent =
                     unreadCount ? `${unreadCount} thông báo chưa đọc` : `${notifications.length} thông báo`;
+                const badgeNotif = document.getElementById("badge-notifications-count");
+                if (badgeNotif) {
+                    badgeNotif.textContent = unreadCount;
+                    badgeNotif.style.display = unreadCount > 0 ? "inline-flex" : "none";
+                }
                 list.replaceChildren();
                 if (!notifications.length) {
                     list.append(makeElement("p", "notification-empty", "Bạn chưa có thông báo nào."));
@@ -447,26 +546,22 @@
 
             async function loadModule3() {
                 const loanBody = document.getElementById("loans3-table");
-                const fineBody = document.getElementById("fines3-table");
                 const licenseBody = document.getElementById("licenses3-table");
                 const logsBody = document.getElementById("download-logs3-table");
                 if (!userId) {
                     const message = "Không xác định được tài khoản hiện tại. Vui lòng đăng nhập lại.";
-                    loanBody.innerHTML = `<tr><td class="empty" colspan="6">${escapeHtml(message)}</td></tr>`;
-                    fineBody.innerHTML = '<tr><td class="empty" colspan="5">Chưa có mã thành viên để tra cứu biên lai.</td></tr>';
+                    loanBody.innerHTML = `<tr><td class="empty" colspan="5">${escapeHtml(message)}</td></tr>`;
                     licenseBody.innerHTML = '<tr><td class="empty" colspan="6">Chưa có mã thành viên để tra cứu giấy phép DRM.</td></tr>';
                     logsBody.innerHTML = '<tr><td class="empty" colspan="4">Chưa có mã thành viên để tra cứu nhật ký.</td></tr>';
                     showModule3Notice(message, "error");
                     return;
                 }
                 showModule3Notice("", "");
-                loanBody.innerHTML = '<tr><td class="loading" colspan="6">Đang tải giao dịch...</td></tr>';
-                fineBody.innerHTML = '<tr><td class="loading" colspan="5">Đang tải biên lai...</td></tr>';
+                loanBody.innerHTML = '<tr><td class="loading" colspan="5">Đang tải giao dịch...</td></tr>';
                 licenseBody.innerHTML = '<tr><td class="loading" colspan="6">Đang tải giấy phép...</td></tr>';
                 logsBody.innerHTML = '<tr><td class="loading" colspan="4">Đang tải nhật ký...</td></tr>';
                 const results = await Promise.allSettled([
                     loadLoans3(),
-                    loadFines3(),
                     loadLicenses3(),
                     loadDownloadLogs3()
                 ]);
@@ -482,7 +577,7 @@
                     loans3 = data;
                     body.replaceChildren();
                     if (!data.length) {
-                        body.innerHTML = '<tr><td class="empty" colspan="6">Chưa có giao dịch trong module mới.</td></tr>';
+                        body.innerHTML = '<tr><td class="empty" colspan="5">Chưa có giao dịch trong module mới.</td></tr>';
                         return;
                     }
                     data.forEach(loan => {
@@ -492,7 +587,7 @@
                             makeElement("td", "", formatDate(loan.dueDate)));
                         const status = document.createElement("td");
                         status.append(makeElement("span", `status ${String(loan.status || "").toLowerCase()}`, loanStatusLabel(loan.status)));
-                        row.append(status, makeElement("td", "", formatPrice(loan.fineAmount)));
+                        row.append(status);
                         const actions = document.createElement("td");
                         if (["BORROWED", "EXTENDED"].includes(loan.status)) {
                             const renew = makeElement("button", "module-action", "Gia hạn 7 ngày");
@@ -506,7 +601,7 @@
                         body.append(row);
                     });
                 } catch (error) {
-                    body.innerHTML = `<tr><td class="error-state" colspan="6">${escapeHtml(error.message)}</td></tr>`;
+                    body.innerHTML = `<tr><td class="error-state" colspan="5">${escapeHtml(error.message)}</td></tr>`;
                     throw error;
                 }
             }
@@ -534,6 +629,12 @@
                     const data = await api(`/api/v3/loans/fines/user/${encodeURIComponent(userId)}`);
                     if (!Array.isArray(data)) throw new Error("Dữ liệu biên lai không đúng định dạng.");
                     body.replaceChildren();
+                    const unpaidFines = data.filter(f => !f.isPaid).length;
+                    const badgeFines = document.getElementById("badge-fines-count");
+                    if (badgeFines) {
+                        badgeFines.textContent = unpaidFines;
+                        badgeFines.style.display = unpaidFines > 0 ? "inline-flex" : "none";
+                    }
                     if (!data.length) {
                         body.innerHTML = '<tr><td class="empty" colspan="5">Bạn chưa có khoản phạt.</td></tr>';
                         return;
@@ -548,14 +649,8 @@
                         row.append(status);
                         const actions = document.createElement("td");
                         if (!fine.isPaid) {
-                            const method = document.createElement("select");
-                            method.setAttribute("aria-label", "Phương thức thanh toán");
-                            [["CASH", "Tiền mặt"], ["BANKING", "Chuyển khoản"], ["WALLET", "Ví điện tử"]]
-                                .forEach(([value, label]) => method.add(new Option(label, value)));
-                            const pay = makeElement("button", "module-action", "Ghi nhận đã thanh toán");
-                            pay.type = "button";
-                            pay.addEventListener("click", () => payFine3(fine, method.value, pay));
-                            actions.append(method, pay);
+                            // Chỉ thủ thư (Admin) được xác nhận đã nộp phạt; độc giả nộp tại quầy
+                            actions.append(makeElement("span", "fine-placeholder", "Vui lòng nộp phạt tại quầy thủ thư"));
                         } else {
                             actions.textContent = fine.paymentMethod || "—";
                         }
@@ -568,29 +663,15 @@
                 }
             }
 
-            async function payFine3(fine, paymentMethod, button) {
-                if (!window.confirm("Ghi nhận khoản phạt này đã được thanh toán? Hành động này không thực hiện giao dịch thu tiền.")) return;
-                button.disabled = true;
-                try {
-                    await api(`/api/v3/loans/fines/${encodeURIComponent(fine.id)}/pay`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ paymentMethod })
-                    });
-                    showModule3Notice("Đã ghi nhận phương thức thanh toán.", "success");
-                    await loadFines3();
-                } catch (error) {
-                    button.disabled = false;
-                    showModule3Notice(error.message, "error");
-                }
-            }
-
             async function loadLicenses3() {
                 const body = document.getElementById("licenses3-table");
                 if (!userId) return;
                 try {
                     const data = await api("/api/v3/drm/mine");
                     if (!Array.isArray(data)) throw new Error("Dữ liệu giấy phép không đúng định dạng.");
+                    const activeLicenses = data.filter(l => l.status === "ACTIVE").length;
+                    const ebookBadge = document.getElementById("badge-ebooks-count");
+                    if (ebookBadge) ebookBadge.textContent = activeLicenses;
                     body.replaceChildren();
                     if (!data.length) {
                         body.innerHTML = '<tr><td class="empty" colspan="6">Tài khoản chưa có giấy phép DRM.</td></tr>';
@@ -598,7 +679,18 @@
                     }
                     data.forEach(license => {
                         const row = document.createElement("tr");
-                        row.append(makeElement("td", "", license.book?.title || "—"),
+                        const titleTd = document.createElement("td");
+                        titleTd.className = "book-name";
+                        const wrap = document.createElement("div");
+                        wrap.className = "book-title-cell";
+                        const iconBox = document.createElement("div");
+                        iconBox.className = "book-thumb-placeholder";
+                        iconBox.style.color = "#2e7d32";
+                        iconBox.textContent = "💻";
+                        wrap.append(iconBox, makeElement("span", "", license.book?.title || "—"));
+                        titleTd.append(wrap);
+
+                        row.append(titleTd,
                             makeElement("td", "", license.licenseKey || "—"),
                             makeElement("td", "", formatDate(license.expiryDate)),
                             makeElement("td", "", `${Number(license.downloadCount) || 0} / ${Number(license.downloadLimit) || 0}`));
@@ -608,8 +700,9 @@
                         const actions = document.createElement("td");
                         if (license.status === "ACTIVE") {
                             const canDownload = hasRemainingDownloads(license);
-                            const download = makeElement("button", "module-action",
-                                canDownload ? "Tải PDF" : "Đã hết lượt");
+                            const download = makeElement("button",
+                                canDownload ? "download-btn-highlight" : "module-action",
+                                canDownload ? "📥 Tải PDF (DRM)" : "Đã hết lượt");
                             download.type = "button";
                             download.disabled = !canDownload;
                             download.addEventListener("click", () => downloadEBook3(license, download));
@@ -757,12 +850,14 @@
             }
 
             function renderSummary() {
-                document.getElementById("pending-count").textContent = numberFormat.format(
-                    transactions.filter(item => item.status === "PENDING").length);
-                document.getElementById("active-count").textContent = numberFormat.format(
-                    transactions.filter(item => item.status === "BORROWED").length);
-                document.getElementById("completed-count").textContent = numberFormat.format(
-                    transactions.filter(item => ["RETURNED", "REJECTED", "CANCELED"].includes(item.status)).length);
+                const pending = transactions.filter(item => item.status === "PENDING").length;
+                const active = transactions.filter(item => item.status === "BORROWED").length;
+                const completed = transactions.filter(item => ["RETURNED", "REJECTED", "CANCELED"].includes(item.status)).length;
+                document.getElementById("pending-count").textContent = numberFormat.format(pending);
+                document.getElementById("active-count").textContent = numberFormat.format(active);
+                document.getElementById("completed-count").textContent = numberFormat.format(completed);
+                const borrowsBadge = document.getElementById("badge-borrows-count");
+                if (borrowsBadge) borrowsBadge.textContent = active + pending;
             }
 
             function renderTransactions() {
@@ -775,7 +870,7 @@
                 transactionsTable.replaceChildren();
                 if (!filtered.length) {
                     const cell = document.createElement("td");
-                    cell.colSpan = 7;
+                    cell.colSpan = 6;
                     cell.className = "empty";
                     const message = document.createElement("div");
                     message.append(makeElement("strong", "", transactions.length
@@ -798,7 +893,17 @@
 
                 filtered.forEach(item => {
                     const row = document.createElement("tr");
-                    row.append(makeElement("td", "book-name", item.bookTitle || "Sách không còn trong danh mục"),
+                    const titleTd = document.createElement("td");
+                    titleTd.className = "book-name";
+                    const wrap = document.createElement("div");
+                    wrap.className = "book-title-cell";
+                    const iconBox = document.createElement("div");
+                    iconBox.className = "book-thumb-placeholder";
+                    iconBox.textContent = "📖";
+                    wrap.append(iconBox, makeElement("span", "", item.bookTitle || "Sách không còn trong danh mục"));
+                    titleTd.append(wrap);
+
+                    row.append(titleTd,
                         makeElement("td", "", formatDate(item.borrowDate)),
                         makeElement("td", "", formatDate(item.dueDate)),
                         makeElement("td", "", formatDate(item.returnDate)));

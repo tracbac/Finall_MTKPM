@@ -16,5 +16,7 @@ public interface LoanRecord3Repository extends JpaRepository<LoanRecord3, Long> 
     List<LoanRecord3> findByStatus(LoanStatus3 status);
     List<LoanRecord3> findByUserIdAndStatus(Long userId, LoanStatus3 status);
     List<LoanRecord3> findByDueDateBeforeAndStatusIn(LocalDate date, Collection<LoanStatus3> statuses);
+    // Dùng cho nhắc hạn trả sách tự động (Observer Pattern - Thành viên 4)
+    List<LoanRecord3> findByDueDateAndStatusIn(LocalDate dueDate, Collection<LoanStatus3> statuses);
     long countByUserIdAndStatus(Long userId, LoanStatus3 status);
 }

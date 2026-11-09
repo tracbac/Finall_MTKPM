@@ -18,18 +18,17 @@ import java.util.Locale;
 
 /**
  * Adaptee trong Adapter Pattern.
- * Đóng vai trò là Client kỹ thuật giao tiếp với Google Books API thông qua giao thức HTTP REST.
- * Đi kèm cơ chế Fallback Online sang OpenLibrary API và Offline Mock khi Google Books API bị 429 Quota Exceeded.
+ * Đóng vai trò là Client kỹ thuật giao tiếp trực tiếp với Google Books API thông qua giao thức HTTP REST.
+ * Đi kèm cơ chế Offline Mock dự phòng an toàn khi mất mạng hoặc chạy Unit Test.
  */
 @Component
 public class GoogleBooksRestClient2 {
 
     private static final Logger log = LoggerFactory.getLogger(GoogleBooksRestClient2.class);
     private static final String GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes";
-    private static final String OPEN_LIBRARY_API_URL = "https://openlibrary.org/search.json";
 
-    @Value("${google.books.api.key:}")
-    private String apiKey;
+    @Value("${google.books.api.key:AIzaSyBPwKQnkI4wJHW0QFp_3imbJvrkB0It4zA}")
+    private String apiKey = "AIzaSyBPwKQnkI4wJHW0QFp_3imbJvrkB0It4zA";
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -55,8 +54,7 @@ public class GoogleBooksRestClient2 {
     }
 
     /**
-     * Phương thức đặc thù của Adaptee gọi Google Volumes API có hỗ trợ phân trang (page).
-     * Tự động chuyển đổi sang OpenLibrary hoặc Offline Mock nếu Google Books chặn 429.
+     * Phương thức đặc thù của Adaptee gọi Google Books API có hỗ trợ phân trang (page).
      */
     public GoogleBooksModel2.GoogleVolumesResponse2 queryGoogleVolumesApi(String q, int page, int maxResults) {
         int safePage = Math.max(page, 1);
@@ -64,10 +62,22 @@ public class GoogleBooksRestClient2 {
         int startIndex = (safePage - 1) * safeMaxResults;
         String searchQuery = (q != null && !q.isBlank()) ? q.trim() : "Design Patterns";
 
-        // 1. Thử gọi Google Books API thật
+        // 1. Gọi trực tiếp Google Books API chính thức
         try {
+            String googleQuery = searchQuery;
+            String lower = googleQuery.toLowerCase(Locale.ROOT);
+            if (lower.startsWith("title:")) {
+                googleQuery = "intitle:" + googleQuery.substring("title:".length()).trim();
+            } else if (lower.startsWith("author:")) {
+                googleQuery = "inauthor:" + googleQuery.substring("author:".length()).trim();
+            } else if (lower.startsWith("category:") || lower.startsWith("subject:")) {
+                googleQuery = "subject:" + googleQuery.substring(googleQuery.indexOf(":") + 1).trim();
+            } else if (lower.startsWith("isbn:")) {
+                googleQuery = "isbn:" + googleQuery.substring("isbn:".length()).trim();
+            }
+
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(GOOGLE_BOOKS_API_URL)
-                    .queryParam("q", searchQuery)
+                    .queryParam("q", googleQuery)
                     .queryParam("startIndex", startIndex)
                     .queryParam("maxResults", safeMaxResults);
 
@@ -76,150 +86,26 @@ public class GoogleBooksRestClient2 {
             }
 
             URI uri = builder.build().encode().toUri();
-            log.info("Gọi Google Books API trang {} với tối đa {} kết quả", safePage, safeMaxResults);
+            log.info("Gọi Google Books API trang {} (startIndex: {}) với từ khóa: '{}'", safePage, startIndex, googleQuery);
 
             ResponseEntity<GoogleBooksModel2.GoogleVolumesResponse2> response =
                     restTemplate.getForEntity(uri, GoogleBooksModel2.GoogleVolumesResponse2.class);
 
-            if (response.getStatusCode().is2xxSuccessful()
-                    && response.getBody() != null
-                    && response.getBody().getItems() != null
-                    && !response.getBody().getItems().isEmpty()) {
-                return response.getBody();
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                GoogleBooksModel2.GoogleVolumesResponse2 body = response.getBody();
+                if (body.getItems() == null) {
+                    body.setItems(List.of());
+                }
+                return body;
             }
         } catch (Exception ex) {
-            log.warn("Google Books API trả về lỗi hoặc quá tải ({}) - Đang chuyển sang OpenLibrary trực tuyến...", ex.getMessage());
+            log.warn("Không thể gọi Google Books API ({}) - Kích hoạt Mock dự phòng.", ex.getMessage());
         }
 
-        // 2. Thử gọi OpenLibrary API trực tuyến thật (hoàn toàn miễn phí, hỗ trợ phân trang chuẩn xác)
-        try {
-            URI openLibUri = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
-                    .queryParam("q", searchQuery)
-                    .queryParam("page", safePage)
-                    .queryParam("limit", safeMaxResults)
-                    .build()
-                    .encode()
-                    .toUri();
-
-            log.info("Kết nối OpenLibrary API: {}", openLibUri);
-            ResponseEntity<String> openLibRes = restTemplate.getForEntity(openLibUri, String.class);
-
-            if (openLibRes.getStatusCode().is2xxSuccessful() && openLibRes.getBody() != null) {
-                GoogleBooksModel2.GoogleVolumesResponse2 converted = parseOpenLibraryResponse(openLibRes.getBody(), safeMaxResults);
-                if (converted != null && converted.getItems() != null && !converted.getItems().isEmpty()) {
-                    return converted;
-                }
-
-                // Nếu tìm chính xác bị 0 kết quả (do gõ nhầm chính tả như 'clean achitecture'), tự động nới lỏng tìm kiếm bằng OR
-                if (searchQuery.contains(" ")) {
-                    String orQuery = searchQuery.replaceAll("\\s+", " OR ");
-                    URI orUri = UriComponentsBuilder.fromHttpUrl(OPEN_LIBRARY_API_URL)
-                            .queryParam("q", orQuery)
-                            .queryParam("page", safePage)
-                            .queryParam("limit", safeMaxResults)
-                            .build()
-                            .encode()
-                            .toUri();
-                    log.info("Thử tìm kiếm nới lỏng lỗi chính tả trên OpenLibrary: {}", orUri);
-                    ResponseEntity<String> orRes = restTemplate.getForEntity(orUri, String.class);
-                    if (orRes.getStatusCode().is2xxSuccessful() && orRes.getBody() != null) {
-                        GoogleBooksModel2.GoogleVolumesResponse2 orConverted = parseOpenLibraryResponse(orRes.getBody(), safeMaxResults);
-                        if (orConverted != null && orConverted.getItems() != null && !orConverted.getItems().isEmpty()) {
-                            return orConverted;
-                        }
-                    }
-                }
-
-                // Kết nối Internet thành công nhưng từ khóa không có sách hoặc đã tới trang cuối
-                return GoogleBooksModel2.GoogleVolumesResponse2.builder()
-                        .kind("books#volumes")
-                        .totalItems(0)
-                        .items(List.of())
-                        .build();
-            }
-        } catch (Exception ex) {
-            log.warn("Không thể kết nối OpenLibrary ({}) - Kích hoạt cơ chế Offline Mock dự phòng.", ex.getMessage());
-        }
-
-        // 3. Fallback an toàn khi mất mạng hoặc không thể truy cập internet
+        // 2. Fallback Offline Mock an toàn khi mất mạng hoặc trong môi trường test cô lập
         return buildOfflineMockResponse(searchQuery, safePage, safeMaxResults);
     }
 
-    /**
-     * Chuyển đổi kết quả OpenLibrary sang chuẩn Google Books Model để Adapter xử lý.
-     */
-    private GoogleBooksModel2.GoogleVolumesResponse2 parseOpenLibraryResponse(String jsonString, int limit) {
-        try {
-            JsonNode root = objectMapper.readTree(jsonString);
-            JsonNode docs = root.get("docs");
-            if (docs == null || !docs.isArray() || docs.isEmpty()) {
-                return null;
-            }
-
-            List<GoogleBooksModel2.GoogleVolumeItem2> items = new ArrayList<>();
-            for (JsonNode doc : docs) {
-                if (items.size() >= limit) break;
-
-                String title = doc.has("title") ? doc.get("title").asText() : "Tài liệu";
-                List<String> authors = new ArrayList<>();
-                if (doc.has("author_name") && doc.get("author_name").isArray()) {
-                    doc.get("author_name").forEach(a -> authors.add(a.asText()));
-                }
-                if (authors.isEmpty()) authors.add("Nhiều tác giả");
-
-                String publisher = doc.has("publisher") && doc.get("publisher").isArray() && !doc.get("publisher").isEmpty()
-                        ? doc.get("publisher").get(0).asText() : "Nhà xuất bản Quốc tế";
-
-                int pages = doc.has("number_of_pages_median") ? doc.get("number_of_pages_median").asInt() : 350;
-
-                String isbnVal = null;
-                if (doc.has("isbn") && doc.get("isbn").isArray() && !doc.get("isbn").isEmpty()) {
-                    isbnVal = doc.get("isbn").get(0).asText();
-                }
-
-                String coverUrl = null;
-                if (doc.has("cover_i")) {
-                    coverUrl = "https://covers.openlibrary.org/b/id/" + doc.get("cover_i").asText() + "-M.jpg";
-                } else {
-                    coverUrl = "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300";
-                }
-
-                items.add(GoogleBooksModel2.GoogleVolumeItem2.builder()
-                        .id("OL-" + (doc.has("key") ? doc.get("key").asText().replace("/works/", "") : System.currentTimeMillis()))
-                        .volumeInfo(GoogleBooksModel2.VolumeInfo.builder()
-                                .title(title)
-                                .authors(authors)
-                                .publisher(publisher)
-                                .publishedDate(doc.has("first_publish_year") ? doc.get("first_publish_year").asText() : "2022")
-                                .description("Tài liệu tra cứu trực tuyến quốc tế từ OpenLibrary về chủ đề " + title + ".")
-                                .pageCount(pages > 0 ? pages : 320)
-                                .categories(List.of("Công nghệ & Khoa học"))
-                                .industryIdentifiers(List.of(
-                                        GoogleBooksModel2.IndustryIdentifier.builder().type("ISBN_13").identifier(isbnVal != null ? isbnVal : "978" + (long)(Math.random() * 10000000000L)).build()
-                                ))
-                                .imageLinks(GoogleBooksModel2.ImageLinks.builder()
-                                        .thumbnail(coverUrl)
-                                        .smallThumbnail(coverUrl)
-                                        .build())
-                                .previewLink("https://openlibrary.org" + (doc.has("key") ? doc.get("key").asText() : ""))
-                                .build())
-                        .build());
-            }
-
-            int total = (root.has("numFound") && root.get("numFound").isInt())
-                    ? root.get("numFound").asInt()
-                    : items.size();
-
-            return GoogleBooksModel2.GoogleVolumesResponse2.builder()
-                    .kind("books#volumes")
-                    .totalItems(total)
-                    .items(items)
-                    .build();
-        } catch (Exception e) {
-            log.error("Lỗi khi chuyển đổi dữ liệu từ OpenLibrary: {}", e.getMessage());
-            return null;
-        }
-    }
 
     private GoogleBooksModel2.GoogleVolumesResponse2 buildOfflineMockResponse(String query, int limit) {
         return buildOfflineMockResponse(query, 1, limit);
@@ -283,17 +169,61 @@ public class GoogleBooksRestClient2 {
                 "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
                 "Phương pháp và kỹ thuật cải thiện thiết kế mã nguồn mà không làm thay đổi hành vi bên ngoài."));
 
-        // Lọc theo từ khóa
-        String lowerQuery = query.toLowerCase(Locale.ROOT);
+        // --- NHÓM Y TẾ, SỨC KHỎE & TÂM LÝ ---
+        allCatalog.add(createMockItem("HLT-01", "Why We Sleep: Unlocking the Power of Sleep and Dreams", List.of("Matthew Walker"),
+                "Scribner", "2017", 368, "Y tế & Sức khỏe", "9781501144318",
+                "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
+                "Nghiên cứu khoa học đột phá về tầm quan trọng sống còn của giấc ngủ đối với thể chất, tinh thần và tuổi thọ."));
+
+        allCatalog.add(createMockItem("HLT-02", "Health Psychology: An Introduction to Behavior and Health", List.of("Linda Brannon", "Jess Feist"),
+                "Wadsworth Publishing", "2017", 560, "Y tế & Tâm lý", "9781337094641",
+                "https://images.unsplash.com/photo-1532012164546-f432f2e37b73?w=300",
+                "Giáo trình toàn diện về mối tương quan giữa hành vi, tâm lý và sức khỏe con người, kiểm soát stress và bệnh tật."));
+
+        allCatalog.add(createMockItem("HLT-03", "Nudge: Improving Decisions About Health, Wealth, and Happiness", List.of("Richard H. Thaler", "Cass R. Sunstein"),
+                "Yale University Press", "2008", 312, "Kinh tế & Quản trị", "9780143115266",
+                "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300",
+                "Kiến trúc lựa chọn và kinh tế học hành vi giúp con người đưa ra quyết định tốt hơn về sức khỏe, tài chính và cuộc sống."));
+
+        // Lọc theo từ khóa và trường chỉ định (hỗ trợ intitle:, inauthor:, subject:, isbn:)
+        String lowerQuery = (query != null) ? query.toLowerCase(Locale.ROOT).trim() : "";
+        String targetScope = "ALL";
+        String cleanQuery = lowerQuery;
+
+        if (cleanQuery.startsWith("intitle:") || cleanQuery.startsWith("title:")) {
+            targetScope = "TITLE";
+            cleanQuery = cleanQuery.replaceFirst("^(intitle:|title:)", "").trim();
+        } else if (cleanQuery.startsWith("inauthor:") || cleanQuery.startsWith("author:")) {
+            targetScope = "AUTHOR";
+            cleanQuery = cleanQuery.replaceFirst("^(inauthor:|author:)", "").trim();
+        } else if (cleanQuery.startsWith("subject:")) {
+            targetScope = "CATEGORY";
+            cleanQuery = cleanQuery.replaceFirst("^subject:", "").trim();
+        } else if (cleanQuery.startsWith("isbn:")) {
+            targetScope = "ISBN";
+            cleanQuery = cleanQuery.replaceFirst("^isbn:", "").trim();
+        }
+
+        final String finalScope = targetScope;
+        final String finalKeyword = cleanQuery;
+
         List<GoogleBooksModel2.GoogleVolumeItem2> filtered = allCatalog.stream()
                 .filter(item -> {
                     GoogleBooksModel2.VolumeInfo info = item.getVolumeInfo();
                     if (info == null) return false;
-                    boolean titleMatch = info.getTitle() != null && info.getTitle().toLowerCase(Locale.ROOT).contains(lowerQuery);
-                    boolean authorMatch = info.getAuthors() != null && info.getAuthors().stream().anyMatch(a -> a.toLowerCase(Locale.ROOT).contains(lowerQuery));
-                    boolean categoryMatch = info.getCategories() != null && info.getCategories().stream().anyMatch(c -> c.toLowerCase(Locale.ROOT).contains(lowerQuery));
-                    boolean descMatch = info.getDescription() != null && info.getDescription().toLowerCase(Locale.ROOT).contains(lowerQuery);
-                    return titleMatch || authorMatch || categoryMatch || descMatch;
+                    boolean titleMatch = info.getTitle() != null && info.getTitle().toLowerCase(Locale.ROOT).contains(finalKeyword);
+                    boolean authorMatch = info.getAuthors() != null && info.getAuthors().stream().anyMatch(a -> a.toLowerCase(Locale.ROOT).contains(finalKeyword));
+                    boolean categoryMatch = info.getCategories() != null && info.getCategories().stream().anyMatch(c -> c.toLowerCase(Locale.ROOT).contains(finalKeyword));
+                    boolean descMatch = info.getDescription() != null && info.getDescription().toLowerCase(Locale.ROOT).contains(finalKeyword);
+                    boolean isbnMatch = info.getIndustryIdentifiers() != null && info.getIndustryIdentifiers().stream().anyMatch(id -> id.getIdentifier() != null && id.getIdentifier().contains(finalKeyword));
+
+                    return switch (finalScope) {
+                        case "TITLE" -> titleMatch;
+                        case "AUTHOR" -> authorMatch;
+                        case "CATEGORY" -> categoryMatch;
+                        case "ISBN" -> isbnMatch;
+                        default -> titleMatch || authorMatch || categoryMatch || descMatch || isbnMatch;
+                    };
                 })
                 .toList();
 

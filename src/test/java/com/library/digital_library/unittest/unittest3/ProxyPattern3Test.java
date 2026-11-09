@@ -3,6 +3,7 @@ package com.library.digital_library.unittest.unittest3;
 import com.library.digital_library.model.Book;
 import com.library.digital_library.model.User;
 import com.library.digital_library.model.model3.*;
+import com.library.digital_library.repository.BorrowTransactionRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.repository.repository3.DownloadLog3Repository;
 import com.library.digital_library.repository.repository3.DrmLicense3Repository;
@@ -47,6 +48,9 @@ class ProxyPattern3Test {
 
     @Mock
     private DownloadLog3Repository downloadLogRepository;
+
+    @Mock
+    private BorrowTransactionRepository borrowTransactionRepository;
 
     @InjectMocks
     private EBookDownloadProxy3 downloadProxy;
@@ -145,6 +149,21 @@ class ProxyPattern3Test {
         when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
         when(fineReceiptRepository.countByUserIdAndIsPaidFalse(1L)).thenReturn(0L);
         when(loanRecordRepository.countByUserIdAndStatus(1L, LoanStatus3.OVERDUE)).thenReturn(2L); // 2 sách quá hạn
+
+        SecurityException ex = assertThrows(SecurityException.class, () -> downloadProxy.downloadEBook(validRequest));
+
+        assertTrue(ex.getMessage().contains("quá hạn chưa hoàn trả"));
+        verify(realService, never()).downloadEBook(any());
+        verify(downloadLogRepository, times(1)).save(argThat(log -> "DENIED".equals(log.getStatus())));
+    }
+
+    @Test
+    @DisplayName("Proxy CHẶN tải khi người dùng giữ sách mượn trực tuyến (BorrowTransaction) quá hạn")
+    void testProxy_DeniesWhenUserHasOverdueOnlineBorrow() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
+        when(fineReceiptRepository.countByUserIdAndIsPaidFalse(1L)).thenReturn(0L);
+        when(loanRecordRepository.countByUserIdAndStatus(1L, LoanStatus3.OVERDUE)).thenReturn(0L);
+        when(borrowTransactionRepository.countOverdueBorrows(eq(1L), any(LocalDate.class))).thenReturn(1L);
 
         SecurityException ex = assertThrows(SecurityException.class, () -> downloadProxy.downloadEBook(validRequest));
 

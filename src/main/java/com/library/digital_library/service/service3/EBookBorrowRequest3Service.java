@@ -10,11 +10,13 @@ import com.library.digital_library.repository.BookRepository;
 import com.library.digital_library.repository.UserRepository;
 import com.library.digital_library.repository.repository3.DrmLicense3Repository;
 import com.library.digital_library.repository.repository3.EBookBorrowRequest3Repository;
-import com.library.digital_library.service.NotificationService;
+import com.library.digital_library.service.service4.observer.LibraryEvent4;
+import com.library.digital_library.service.service4.observer.LibraryEventType4;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +29,8 @@ public class EBookBorrowRequest3Service {
     private final BookRepository bookRepository;
     private final DrmLicense3Repository drmLicenseRepository;
     private final DrmLicenseService3 drmLicenseService;
-    private final NotificationService notificationService;
+    // Subject trong Observer Pattern (Thành viên 4)
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public EBookBorrowRequest3 createRequest(String username, Long bookId) {
@@ -50,10 +53,10 @@ public class EBookBorrowRequest3Service {
                 .status(EBookRequestStatus3.PENDING)
                 .requestedAt(LocalDateTime.now())
                 .build());
-        notificationService.notifyUser(user.getId(),
-                "Yêu cầu mượn E-Book \"" + book.getTitle() + "\" đã được gửi và đang chờ duyệt.");
-        notificationService.notifyRole("ADMIN",
-                "Có yêu cầu mượn E-Book \"" + book.getTitle() + "\" mới từ " + user.getUsername() + ".");
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.EBOOK_REQUESTED, user.getId(),
+                "Yêu cầu mượn E-Book \"" + book.getTitle() + "\" đã được gửi và đang chờ duyệt."));
+        eventPublisher.publishEvent(LibraryEvent4.toRole(LibraryEventType4.EBOOK_REQUESTED, "ADMIN",
+                "Có yêu cầu mượn E-Book \"" + book.getTitle() + "\" mới từ " + user.getUsername() + "."));
         return request;
     }
 
@@ -105,9 +108,9 @@ public class EBookBorrowRequest3Service {
                 "Đã duyệt: hiệu lực %d ngày, tối đa %d lượt tải.", validDays, maxDownloads));
         request.setLicenseKey(license.getLicenseKey());
         EBookBorrowRequest3 approvedRequest = requestRepository.save(request);
-        notificationService.notifyUser(request.getUser().getId(),
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.EBOOK_APPROVED, request.getUser().getId(),
                 "Yêu cầu E-Book \"" + request.getBook().getTitle()
-                        + "\" đã được duyệt và giấy phép DRM đã được cấp.");
+                        + "\" đã được duyệt và giấy phép DRM đã được cấp."));
         return approvedRequest;
     }
 
@@ -119,9 +122,9 @@ public class EBookBorrowRequest3Service {
         request.setReviewedAt(LocalDateTime.now());
         request.setReviewNote(note == null || note.isBlank() ? "Yêu cầu đã bị từ chối." : note.trim());
         EBookBorrowRequest3 rejectedRequest = requestRepository.save(request);
-        notificationService.notifyUser(request.getUser().getId(),
+        eventPublisher.publishEvent(LibraryEvent4.toUser(LibraryEventType4.EBOOK_REJECTED, request.getUser().getId(),
                 "Yêu cầu E-Book \"" + request.getBook().getTitle() + "\" đã bị từ chối. "
-                        + request.getReviewNote());
+                        + request.getReviewNote()));
         return rejectedRequest;
     }
 
