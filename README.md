@@ -92,7 +92,7 @@ Hệ thống đã tự động nạp dữ liệu mẫu ban đầu:
 
 ## 6. Danh mục Tài liệu và Minh chứng Đính kèm
 
-- **Báo cáo Tiểu luận Chính thức:** File [`Tieu_luan_MTKPM_He_thong_quan_ly_thu_vien_so.docx`](./Tieu_luan_MTKPM_He_thong_quan_ly_thu_vien_so.docx) (68 trang hoàn chỉnh, chứa đầy đủ mục lục tự động, 28 hình vẽ sơ đồ thiết kế UML và ảnh chụp kết quả demo thực tế, bảng phân công nhiệm vụ thành viên).
+- **Báo cáo Tiểu luận:** Tài liệu báo cáo chi tiết (68 trang, 28 sơ đồ UML và ảnh chụp kết quả kiểm thử thực tế) được nộp riêng theo cổng nộp bài của giảng viên.
 - **Thư mục Ảnh Minh chứng Demo:** Thư mục [`anh_demo/`](./anh_demo/) chứa toàn bộ các ảnh chụp màn hình kiểm thử từ `00_mvnw_test.png` đến `06_nhac_han_tra.png`.
 - **Bộ Kiểm thử API (Postman Collection):** File [`Digital_Library_Member2_Postman_Collection.json`](./Digital_Library_Member2_Postman_Collection.json) dùng để nhập vào Postman kiểm thử các REST API của hệ thống.
 

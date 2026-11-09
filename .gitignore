@@ -8,6 +8,7 @@ target/
 node_modules/
 *.zip
 *.log
+*.docx
 
 ### STS ###
 .apt_generated
