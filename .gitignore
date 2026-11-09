@@ -1,8 +1,13 @@
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+### Dependencies & Archives ###
+node_modules/
+*.zip
+*.log
 
 ### STS ###
 .apt_generated
@@ -32,8 +37,8 @@ build/
 ### VS Code ###
 .vscode/
 
+### Environment & Uploads ###
 .env
 .env.*
 !.env.example
 uploads/
-
