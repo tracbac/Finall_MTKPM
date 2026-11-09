@@ -512,7 +512,6 @@
             };
             const numberFormat = new Intl.NumberFormat("vi-VN");
             const bookDialog = document.getElementById("book-dialog");
-            const userDialog = document.getElementById("user-dialog");
             const globalNotice = document.getElementById("global-notice");
             let books = [];
             let borrows = [];
@@ -583,9 +582,6 @@
             document.getElementById("account-search").addEventListener("input", renderAccounts);
             document.getElementById("account-role-filter").addEventListener("change", renderAccounts);
             document.getElementById("refresh-accounts").addEventListener("click", loadAccounts);
-            document.getElementById("close-user-dialog").addEventListener("click", () => userDialog.close());
-            document.getElementById("cancel-user-edit").addEventListener("click", () => userDialog.close());
-            document.getElementById("user-edit-form").addEventListener("submit", updateUser);
             document.getElementById("accounts-table").addEventListener("click", event => {
                 const button = event.target.closest("button[data-user-action]");
                 if (!button) return;
@@ -1754,42 +1750,6 @@
                     await loadAccounts();
                 } catch (error) {
                     showInlineNotice("user-notice", error.message, "error");
-                } finally {
-                    button.disabled = false;
-                }
-            }
-
-            function openUserForm(user) {
-                document.getElementById("user-edit-form").reset();
-                document.getElementById("edit-user-id").value = user.id;
-                document.getElementById("edit-user-username").value = user.username || "";
-                document.getElementById("edit-user-email").value = user.email || "";
-                document.getElementById("edit-user-role").value = String(user.role || "USER").toUpperCase();
-                showInlineNotice("user-edit-notice", "", "");
-                userDialog.showModal();
-            }
-
-            async function updateUser(event) {
-                event.preventDefault();
-                const form = event.currentTarget;
-                if (!form.reportValidity()) return;
-                const id = document.getElementById("edit-user-id").value;
-                const payload = Object.fromEntries(new FormData(form).entries());
-                delete payload.id;
-                const button = document.getElementById("user-edit-submit");
-                button.disabled = true;
-                showInlineNotice("user-edit-notice", "", "");
-                try {
-                    await api(`/api/admin/users/${encodeURIComponent(id)}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload)
-                    });
-                    userDialog.close();
-                    showNotice("Đã cập nhật tài khoản.", "success");
-                    await loadAccounts();
-                } catch (error) {
-                    showInlineNotice("user-edit-notice", error.message, "error");
                 } finally {
                     button.disabled = false;
                 }
